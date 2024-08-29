@@ -1,0 +1,20 @@
+requests
+# psycopg2-binary
+# psycopg2
+pandas
+pandas_gbq
+python-dotenv
+redis
+gspread
+flower
+celery
+celery-singleton
+sqlalchemy
+airflow-code-editor
+# apache-beam[gcp]
+# apache-airflow-providers-apache-beam[google]
+pyyaml
+google-cloud-storage
+google-cloud-bigquery
+tqdm
+pymongo

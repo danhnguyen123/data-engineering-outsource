@@ -1,0 +1,8 @@
+venv
+*/airflow/logs/*
+*__pycache__*
+*.log
+*.ipynb
+*/secrets/.env
+*/secrets/lark-base-config.yaml
+*/secrets/service-account.json

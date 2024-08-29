@@ -1,0 +1,66 @@
+# variables:
+#   PRODUCT_NAME: airflow
+
+# stages:
+#   - Test
+#   - Deploy Prod
+#   - Redeploy Prod
+#   - Restart Prod
+
+# default:
+#   tags:
+#     - shell
+
+# before_script:
+#   - chmod +x ./scripts/welcome.sh && ./scripts/welcome.sh
+#   - 'which ssh-agent || (sudo apt-get update -y && sudo apt-get install openssh-client -y )'
+#   - eval $(ssh-agent -s)
+#   - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+#   - mkdir -p ~/.ssh
+#   - chmod 700 ~/.ssh
+#   - ssh-keyscan $VM_HOST >> ~/.ssh/known_hosts
+#   - chmod 644 ~/.ssh/known_hosts
+
+# .Run Test:
+#   stage: Test
+#   variables:
+#     FOO: bar
+#   script:
+#     - echo "Success"
+#   only:
+#     - branches
+#   except:
+#     - master
+
+# Deploy Prod:
+#   stage: Deploy Prod
+#   script:
+#     - echo "$ENVIRONMENT_VARIABLES" > ./airflow/secrets/.env
+#     - echo "$GCP_SVC_KEY" > ./airflow/secrets/service-account.json
+#     - echo "$LARK_BASE_CONFIG" > ./airflow/secrets/lark-base-config.yaml
+#     - rsync -avz --exclude='.git' ./ $VM_USER@$VM_HOST:~/sapp-lark
+#   environment:
+#     name: prod
+#   when: manual
+#   only:
+#     - tags
+
+# Redeploy Prod:
+#   stage: Redeploy Prod
+#   script:
+#     - ssh -o StrictHostKeyChecking=no $VM_USER@$VM_HOST "cd ~/sapp-lark && make deploy"
+#   environment:
+#     name: prod
+#   when: manual
+#   only:
+#     - tags
+
+# Restart Prod:
+#   stage: Restart Prod
+#   script:
+#     - ssh -o StrictHostKeyChecking=no $VM_USER@$VM_HOST "cd ~/sapp-lark && make down && sleep 5 && make up"
+#   environment:
+#     name: prod
+#   when: manual
+#   only:
+#     - tags
