@@ -79,8 +79,8 @@ class AppConfig(object):
     LARK_ALERT_GROUP_ID = ""
 
 
-    MONGODB_HOST = "mongodb"
-    MONGODB_PORT = 27017
+    MONGODB_HOST = os.getenv("MONGODB_HOST", "unknown")
+    MONGODB_PORT =int(os.getenv("MONGODB_PORT"))
     MONGODB_USER = os.getenv("MONGODB_USER", "unknown")
     MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD", "unknown")
     MONGODB_CONN = f"mongodb://{MONGODB_USER}:{MONGODB_PASSWORD}@{MONGODB_HOST}:{MONGODB_PORT}/"

@@ -219,18 +219,16 @@ services:
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
-  # airflow-cli:
-  #   <<: *airflow-common
-  #   profiles:
-  #     - debug
-  #   environment:
-  #     <<: *airflow-common-env
-  #     CONNECTION_CHECK_MAX_COUNT: "0"
-  #   # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
-  #   command:
-  #     - bash
-  #     - -c
-  #     - airflow
+  airflow-cli:
+    <<: *airflow-common
+    environment:
+      <<: *airflow-common-env
+      CONNECTION_CHECK_MAX_COUNT: "0"
+    # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
+    command:
+      - bash
+      - -c
+      - python3 /opt/airflow/plugins/modules/utils/mongodb_setup.py
 
   airflow-log-groomer:
     <<: *airflow-common
@@ -279,7 +277,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root123
-      MONGO_INITDB_DATABASE: staging
+      # MONGO_INITDB_DATABASE: staging
     volumes:
       - mongodb:/data/db
       - mongoconfig:/data/configdb
