@@ -26,7 +26,7 @@ class InvoiceDetailsETL:
             redis: RedisHelper,
             mongodb: MongoDBHeler,
             namespace: str,
-            params: Dict,
+            vars: Dict,
             context: Context,
         ):
         self.logger = logger
@@ -39,12 +39,12 @@ class InvoiceDetailsETL:
         self.redis = redis
         self.mongodb = mongodb
         self.namespace = namespace
-        self.params = params
+        self.vars = vars
         self.context = context
 
         self.run_config = self.context['dag_run'].conf.get(table_name) if self.context['dag_run'].conf.get(table_name) else self.context['params'].get(table_name)
-        self.start_date = self.context['dag_run'].conf.get('start_date') if self.context['dag_run'].conf.get('start_date') else self.params["start_date"] 
-        self.end_date = self.context['dag_run'].conf.get('end_date') if self.context['dag_run'].conf.get('end_date') else self.params["end_date"] 
+        self.start_date = self.context['dag_run'].conf.get('start_date') if self.context['dag_run'].conf.get('start_date') else self.vars["start_date"] 
+        self.end_date = self.context['dag_run'].conf.get('end_date') if self.context['dag_run'].conf.get('end_date') else self.vars["end_date"] 
         self.dataset_staging_id = config.DATASET_STAGING_ID
         self.start_datetime = TimeHelper.get_start_date_format(self.start_date)
         self.end_datetime = TimeHelper.get_end_date_format(self.end_date)
@@ -63,7 +63,9 @@ class InvoiceDetailsETL:
         self.logger.debug(f"Get data {self.table_name} from Eshop")
 
         # Get list Invoice will get detail data
-        list_invoices = self.mongodb.find(config.MONGODB_TEMP, self.invoices_temp_table, {"GetDetailStatus": False})
+        list_invoices = self.mongodb.find(config.MONGODB_CACHING, self.invoices_temp_table, {"GetDetailStatus": False})
+
+        self.logger.debug(f"Number of invoices: {len(list_invoices)}")
 
         if list_invoices:
             self.context['ti'].xcom_push(key=config.NEW_DATA, value=True)
@@ -81,12 +83,17 @@ class InvoiceDetailsETL:
                 "InvoiceDetails": data.get("InvocieDetails")
             }
             self.mongodb.update_one(
-                            database=config.MONGODB_TEMP, 
+                            database=config.MONGODB_CACHING, 
                             collection=self.invoices_temp_table,
                             contition={"_id": invoice_id},
                             update_query={"$set": {"GetDetailStatus": True}}
                             )
-            self.mongodb.insert_one(database=config.MONGODB_STAGING, collection=self.table_name, document={"_id": invoice_id, **result})
+            # self.mongodb.insert_one(database=config.MONGODB_STAGING, collection=self.table_name, document={"_id": invoice_id, **result})
+            self.mongodb.update_one(database=config.MONGODB_STAGING, collection=self.table_name, 
+                                    contition={"_id": invoice_id}, 
+                                    update_query={"$set": invoice},
+                                    upsert=True
+                                    )
 
         # with concurrent.futures.ThreadPoolExecutor(10) as executor:
         #     with tqdm(total=len(list_invoices), desc="Processing Tasks") as pbar:
@@ -100,7 +107,7 @@ class InvoiceDetailsETL:
         # self.logger.debug(f"Upload json data {self.table_name} to GCS: {file_name}")
         # self.gcs.upload_json(json_string=json_data, file_name=file_name)
 
-        self.mongodb.truncate_collection(database=config.MONGODB_TEMP, collection=self.invoices_temp_table)
+        self.mongodb.truncate_collection(database=config.MONGODB_CACHING, collection=self.invoices_temp_table)
 
         return "Success"  
 
@@ -161,6 +168,8 @@ class InvoiceDetailsETL:
         self.logger.debug(f"The DataFrame has {len(df)} rows.")
         self.bq.bq_append(update_data=df, table_name=self.table_name, dataset_id=self.dataset_staging_id)
 
+        # self.mongodb.truncate_collection(database=config.MONGODB_STAGING, collection=self.table_name)
+
         return "Success"  
 
     def load(self):
@@ -179,7 +188,12 @@ class InvoiceDetailsETL:
 
         merge_query = f'''
         merge `{self.project_id}.{self.dataset_id}.{self.table_name}` t
-        using `{self.project_id}.{self.dataset_staging_id}.{self.table_name}` s
+        using (
+            select *
+            from `{self.project_id}.{self.dataset_staging_id}.{self.table_name}`
+            where 1=1
+            qualify row_number() over(partition by InvoiceId, SKU order by SortOrder desc) = 1
+        ) s
         on t.InvoiceId = s.InvoiceId and t.SKU = s.SKU
         when matched then
         update set 

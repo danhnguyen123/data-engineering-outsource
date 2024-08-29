@@ -6,7 +6,7 @@ x-airflow-common:
     context: .
     dockerfile: Dockerfile
   image: airflow-image
-  env_file: ./secrets/.env
+  env_file: ./envs/.env
   extra_hosts:
     - "host.docker.internal:host-gateway"
   environment:
@@ -33,7 +33,7 @@ x-airflow-common:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
-    - ./secrets:/opt/airflow/secrets
+    - ./envs:/opt/airflow/envs
   user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
   depends_on:
     &airflow-common-depends-on
@@ -286,18 +286,18 @@ services:
     networks:
       - data-network
 
-  # mongo-express:
-  #   image: mongo-express
-  #   restart: always
-  #   ports:
-  #     - 8081:8081
-  #   environment:
-  #     ME_CONFIG_MONGODB_ADMINUSERNAME: root
-  #     ME_CONFIG_MONGODB_ADMINPASSWORD: root123
-  #     ME_CONFIG_MONGODB_URL: mongodb://root:root123@mongodb:27017/
-  #     ME_CONFIG_BASICAUTH: false
-  #   networks:
-  #     - data-network
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: root123
+      ME_CONFIG_MONGODB_URL: mongodb://root:root123@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    networks:
+      - data-network
 
 volumes:
   postgres-db-volume:

@@ -32,6 +32,10 @@ INVOICES = 'invoices'
 INVOICE_DETAILS = 'invoice_details'
 INVENTORY_ITEMS = 'inventory_items'
 
+RETRY_BATCH = 10 if config.ENV == "prod" else 5
+RETRY_DETAIL = 100 if config.ENV == "prod" else 50
+RETRY_DETAIL_DEPLAY = timedelta(seconds=10)
+
 local_tz = pendulum.timezone(config.DWH_TIMEZONE)
 
 logger = LoggingHelper.get_configured_logger(__name__)
@@ -57,12 +61,12 @@ eshop_tables_list = [INVOICES, INVOICE_DETAILS, INVENTORY_ITEMS]
 default_args = {
     'owner': 'danh.nguyen',
     'depends_on_past': False,
-    # 'on_failure_callback': on_failure_callback,
+    'on_failure_callback': on_failure_callback,
     'trigger_rule' : 'all_done', #https://marclamberti.com/blog/airflow-trigger-rules-all-you-need-to-know/
     'email': ['de@datalize.cloud'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 1 if config.ENV == "prod" else 1,
+    'retries': 2 if config.ENV == "prod" else 1,
     'retry_delay': timedelta(minutes=1),
     'catchup' : False,
 }
@@ -82,7 +86,7 @@ def contruct_params():
         })
     return params
 
-def call_python_etl(namespace, table_name, task_name, params, **kwargs):
+def call_python_etl(namespace, table_name, task_name, vars, **kwargs):
 
     table_etl = mapping_etl.get(table_name)(
         logger=logger,
@@ -95,17 +99,17 @@ def call_python_etl(namespace, table_name, task_name, params, **kwargs):
         redis=redis,
         mongodb=mongodb,
         namespace=namespace,
-        params=params,
+        vars=vars,
         context=kwargs
     )
 
     return getattr(table_etl, task_name)()
 
 with DAG(
-    'dags-etl-sync-fast-sync',
+    'dag-daily-eshop-sync',
     default_args=default_args,
     description='ETL Data from Misa Eshop to BigQuery',
-    schedule_interval='0 1 * * *' if config.ENV == "prod" else None,
+    schedule_interval='*/5 * * * *' if config.ENV == "prod" else None, 
     start_date=datetime(2024, 1, 1, 0, tzinfo=local_tz),
     catchup=False,
     tags=["daily", 'elt','eshop', 'bigquery'],
@@ -123,13 +127,14 @@ with DAG(
                 task_id=f"extract_{INVOICES}",
                 python_callable=call_python_etl,
                 provide_context=True,
+                retries=RETRY_BATCH,
                 op_kwargs={
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVOICES,
                     "task_name": "extract",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
-                        "end_date": TimeHelper.get_end_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "end_date": TimeHelper.get_end_current_date_format(),
                     }
                 }
                 )
@@ -142,9 +147,9 @@ with DAG(
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVOICES,
                     "task_name": "transform",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
-                        "end_date": TimeHelper.get_end_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "end_date": TimeHelper.get_end_current_date_format(),
                     }
                 }
                 )
@@ -157,9 +162,9 @@ with DAG(
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVOICES,
                     "task_name": "load",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
-                        "end_date": TimeHelper.get_end_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "end_date": TimeHelper.get_end_current_date_format(),
                     }
                 }
                 )
@@ -173,13 +178,15 @@ with DAG(
                 task_id=f"extract_{INVOICE_DETAILS}",
                 python_callable=call_python_etl,
                 provide_context=True,
+                retries=RETRY_DETAIL,
+                retry_delay=RETRY_DETAIL_DEPLAY,
                 op_kwargs={
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVOICE_DETAILS,
                     "task_name": "extract",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
-                        "end_date": TimeHelper.get_end_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "end_date": TimeHelper.get_end_current_date_format(),
                     }
                 }
                 )
@@ -192,9 +199,9 @@ with DAG(
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVOICE_DETAILS,
                     "task_name": "transform",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
-                        "end_date": TimeHelper.get_end_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "end_date": TimeHelper.get_end_current_date_format(),
                     }
                 }
                 )
@@ -207,9 +214,9 @@ with DAG(
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVOICE_DETAILS,
                     "task_name": "load",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
-                        "end_date": TimeHelper.get_end_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "end_date": TimeHelper.get_end_current_date_format(),
                     }
                 }
                 )
@@ -222,12 +229,13 @@ with DAG(
                 task_id=f"extract_{INVENTORY_ITEMS}",
                 python_callable=call_python_etl,
                 provide_context=True,
+                retries=RETRY_BATCH,
                 op_kwargs={
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVENTORY_ITEMS,
                     "task_name": "extract",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
                     }
                 }
                 )
@@ -240,8 +248,8 @@ with DAG(
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVENTORY_ITEMS,
                     "task_name": "transform",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
                     }
                 }
                 )
@@ -254,8 +262,8 @@ with DAG(
                     "namespace": ESHOP_NAMESPACE,
                     "table_name": INVENTORY_ITEMS,
                     "task_name": "load",
-                    "params": {
-                        "start_date": TimeHelper.get_start_yesterday_date_format(),
+                    "vars": {
+                        "start_date": TimeHelper.get_start_current_date_format(),
                     }
                 }
                 )

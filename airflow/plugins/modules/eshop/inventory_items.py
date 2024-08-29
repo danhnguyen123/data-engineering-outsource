@@ -25,7 +25,7 @@ class InventoryItemsETL:
             redis: RedisHelper,
             mongodb: MongoDBHeler,
             namespace: str,
-            params: Dict,
+            vars: Dict,
             context: Context,
         ):
         self.logger = logger
@@ -38,11 +38,11 @@ class InventoryItemsETL:
         self.redis = redis
         self.mongodb = mongodb
         self.namespace = namespace
-        self.params = params
+        self.vars = vars
         self.context = context
 
         self.run_config = self.context['dag_run'].conf.get(table_name) if self.context['dag_run'].conf.get(table_name) else self.context['params'].get(table_name)
-        self.start_date = self.context['dag_run'].conf.get('start_date') if self.context['dag_run'].conf.get('start_date') else self.params["start_date"] 
+        self.start_date = self.context['dag_run'].conf.get('start_date') if self.context['dag_run'].conf.get('start_date') else self.vars["start_date"] 
         self.dataset_staging_id = config.DATASET_STAGING_ID
         self.path_date = self.start_date if self.start_date else "0000-00-00"
 
@@ -75,11 +75,15 @@ class InventoryItemsETL:
             return "Success"
 
         # data_inventory_items = []
-        # for inventory_items in results:
+        for inventory_items in results:
         #     data_inventory_items.append({"_id": inventory_items.get("Id"), **inventory_items})
-
+            self.mongodb.update_one(database=config.MONGODB_STAGING, collection=self.table_name, 
+                                    contition={"_id": inventory_items.get("Id")}, 
+                                    update_query={"$set": inventory_items},
+                                    upsert=True
+                                    )
         # self.mongodb.insert_many(database=config.MONGODB_STAGING, collection=self.table_name, list_document=data_inventory_items)
-        self.mongodb.insert_many(database=config.MONGODB_STAGING, collection=self.table_name, list_document=results)
+        # self.mongodb.insert_many(database=config.MONGODB_STAGING, collection=self.table_name, list_document=results)
 
         # json_data = '\n'.join(json.dumps(data_dict, ensure_ascii=False) for data_dict in results)
         # file_name = f"{config.PREFIX_ESHOP_BUCKET}/{self.table_name}/{self.path_date}/{config.PREFIX_JSON_FILE}_{page}.json"
@@ -96,11 +100,13 @@ class InventoryItemsETL:
 
             if results:
                 # data_inventory_items = []
-                # for inventory_items in results:
+                for inventory_items in results:
                 #     data_inventory_items.append({"_id": inventory_items.get("Id"), **inventory_items})
-
-                # self.mongodb.insert_many(database=config.MONGODB_STAGING, collection=self.table_name, list_document=data_inventory_items)
-                self.mongodb.insert_many(database=config.MONGODB_STAGING, collection=self.table_name, list_document=results)
+                    self.mongodb.update_one(database=config.MONGODB_STAGING, collection=self.table_name, 
+                                            contition={"_id": inventory_items.get("Id")}, 
+                                            update_query={"$set": inventory_items},
+                                            upsert=True
+                                            )
 
                 # json_data = '\n'.join(json.dumps(data_dict, ensure_ascii=False) for data_dict in results)
                 # file_name = f"{config.PREFIX_ESHOP_BUCKET}/{self.table_name}/{self.path_date}/{config.PREFIX_JSON_FILE}_{page}.json"
@@ -199,6 +205,8 @@ class InventoryItemsETL:
 
         self.logger.debug(f"The DataFrame has {len(df)} rows.")
         self.bq.bq_append(update_data=df, table_name=self.table_name, dataset_id=self.dataset_staging_id)
+
+        # self.mongodb.truncate_collection(database=config.MONGODB_STAGING, collection=self.table_name)
 
         return "Success"  
 

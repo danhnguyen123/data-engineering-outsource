@@ -24,7 +24,7 @@ class InvoicesETL:
             redis: RedisHelper,
             mongodb: MongoDBHeler,
             namespace: str,
-            params: Dict,
+            vars: Dict,
             context: Context,
         ):
         self.logger = logger
@@ -37,12 +37,12 @@ class InvoicesETL:
         self.redis = redis
         self.mongodb = mongodb
         self.namespace = namespace
-        self.params = params
+        self.vars = vars
         self.context = context
 
         self.run_config = self.context['dag_run'].conf.get(table_name) if self.context['dag_run'].conf.get(table_name) else self.context['params'].get(table_name)
-        self.start_date = self.context['dag_run'].conf.get('start_date') if self.context['dag_run'].conf.get('start_date') else self.params["start_date"] 
-        self.end_date = self.context['dag_run'].conf.get('end_date') if self.context['dag_run'].conf.get('end_date') else self.params["end_date"] 
+        self.start_date = self.context['dag_run'].conf.get('start_date') if self.context['dag_run'].conf.get('start_date') else self.vars["start_date"] 
+        self.end_date = self.context['dag_run'].conf.get('end_date') if self.context['dag_run'].conf.get('end_date') else self.vars["end_date"] 
         self.dataset_staging_id = config.DATASET_STAGING_ID
         self.start_datetime = TimeHelper.get_start_date_format(self.start_date)
         self.end_datetime = TimeHelper.get_end_date_format(self.end_date)
@@ -72,19 +72,23 @@ class InvoicesETL:
             self.logger.debug("There is no new data. Skip extract job !")
             return "Success"
         
-        data_invoices = []
+        # data_invoices = []
         # list_invoices = []
         for invoice in results:
-            data_invoices.append({**invoice})
+            # data_invoices.append({**invoice})
             # list_invoices.append({"_id": invoice.get("InvoiceId"), "InvoiceId": invoice.get("InvoiceId"), "GetDetailStatus": False})
-            self.mongodb.update_one(database=config.MONGODB_TEMP, collection=self.table_name, 
+            self.mongodb.update_one(database=config.MONGODB_CACHING, collection=self.table_name, 
                                     contition={"_id": invoice.get("InvoiceId")}, 
                                     update_query={"$set": {"InvoiceId": invoice.get("InvoiceId"), "GetDetailStatus": False}},
                                     upsert=True
                                     )
 
-        self.mongodb.insert_many(database=config.MONGODB_STAGING, collection=self.table_name, list_document=data_invoices)
-        # self.mongodb.insert_many(database=config.MONGODB_TEMP, collection=self.table_name, list_document=list_invoices)
+            self.mongodb.update_one(database=config.MONGODB_STAGING, collection=self.table_name, 
+                                    contition={"_id": invoice.get("InvoiceId")}, 
+                                    update_query={"$set": invoice},
+                                    upsert=True
+                                    )
+        # self.mongodb.insert_many(database=config.MONGODB_CACHING, collection=self.table_name, list_document=list_invoices)
 
         # json_data = '\n'.join(json.dumps(data_dict, ensure_ascii=False) for data_dict in results)
         # file_name = f"{config.PREFIX_ESHOP_BUCKET}/{self.table_name}/{self.start_date}/{self.end_date}/{config.PREFIX_JSON_FILE}_{page}.json"
@@ -100,19 +104,23 @@ class InvoicesETL:
             results = self.eshop.get_invoices(page=page, from_datetime=self.start_datetime, to_datetime=self.end_datetime)
 
             if results:
-                data_invoices = []
+                # data_invoices = []
                 # list_invoices = []
                 for invoice in results:
-                    data_invoices.append({**invoice})
+                    # data_invoices.append({**invoice})
                     # list_invoices.append({"_id": invoice.get("InvoiceId"), "InvoiceId": invoice.get("InvoiceId"), "GetDetailStatus": False})
-                    self.mongodb.update_one(database=config.MONGODB_TEMP, collection=self.table_name, 
+                    self.mongodb.update_one(database=config.MONGODB_CACHING, collection=self.table_name, 
                                             contition={"_id": invoice.get("InvoiceId")}, 
                                             update_query={"$set": {"InvoiceId": invoice.get("InvoiceId"), "GetDetailStatus": False}},
                                             upsert=True
                                             )
 
-                self.mongodb.insert_many(database=config.MONGODB_STAGING, collection=self.table_name, list_document=data_invoices)
-                # self.mongodb.insert_many(database=config.MONGODB_TEMP, collection=self.table_name, list_document=list_invoices)
+                    self.mongodb.update_one(database=config.MONGODB_STAGING, collection=self.table_name, 
+                                            contition={"_id": invoice.get("InvoiceId")}, 
+                                            update_query={"$set": invoice},
+                                            upsert=True
+                                            )
+                # self.mongodb.insert_many(database=config.MONGODB_CACHING, collection=self.table_name, list_document=list_invoices)
 
                 # json_data = '\n'.join(json.dumps(data_dict, ensure_ascii=False) for data_dict in results)
                 # file_name = f"{config.PREFIX_ESHOP_BUCKET}/{self.table_name}/{self.start_date}/{self.end_date}/{config.PREFIX_JSON_FILE}_{page}.json"
@@ -192,6 +200,8 @@ class InvoicesETL:
 
         self.logger.debug(f"The DataFrame has {len(df)} rows.")
         self.bq.bq_append(update_data=df, table_name=self.table_name, dataset_id=self.dataset_staging_id)
+
+        # self.mongodb.truncate_collection(database=config.MONGODB_STAGING, collection=self.table_name)
 
         return "Success"  
 

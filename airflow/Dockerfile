@@ -22,5 +22,5 @@ RUN pip install passlib
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
-ENV PYTHONPATH=${PYTHONPATH}:/opt/airflow/plugins
+ENV PYTHONPATH=${PYTHONPATH}:/opt/airflow/plugins:/opt/airflow/envs
 

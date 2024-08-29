@@ -1,7 +1,7 @@
 import os
 import dotenv
 import yaml
-dotenv.load_dotenv('/opt/airflow/secrets/.env')
+dotenv.load_dotenv('/opt/airflow/envs/.env')
 
 class AppConfig(object):
     """
@@ -13,6 +13,16 @@ class AppConfig(object):
         """
     ENV = os.getenv("ENV","dev")
     LOG_LEVEL = os.getenv("LOG_LEVEL", "debug")
+
+    LARK_APP_ID = os.getenv("LARK_APP_ID","unknown")
+    LARK_APP_SECRET = os.getenv("LARK_APP_SECRET","unknown")
+    LARK_TOKEN_REDIS_KEY = os.getenv("LARK_TOKEN_REDIS_KEY","unknown")
+    LARK_TOKEN_REDIS_TTL = os.getenv("LARK_TOKEN_TTL", 3600)
+    LARK_ALERT_GROUP_ID = os.getenv("LARK_ALERT_GROUP_ID","unknown")
+    LARK_OPEN_URL = os.getenv("LARK_OPEN_URL","https://open.larksuite.com")
+    LARK_BASE_PAGE_SIZE = 200
+    LARK_API_TIMEOUT = 120
+    LARK_BATCH_POST = 100
 
     REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
     REDIS_PORT = os.getenv("REDIS_PORT", 6379)
@@ -54,6 +64,12 @@ class AppConfig(object):
     AMIS_ACCESS_TOKEN_TTL = 36000 # 10 hours, Misa Amis expire 12h
     AMIS_PAGE_LIMIT = 100
     AMIS_REQUEST_TIMEOUT = 30
+    # MISA Amis Web
+    AMIS_WEB_URL = "https://actapp.misa.vn"
+    AMIS_WEB_REQUEST_TIMEOUT = 30
+    AMIS_WEB_ACCESS_TOKEN_REDIS = "AMIS_ACCESS_TOKEN_REDIS"
+    AMIS_WEB_COLLECTION = "amis_config"
+    AMIS_WEB_PAGE_LIMIT = 20
 
     DWH_TIMEZONE = 'Asia/Ho_Chi_Minh'
     DWH_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -69,7 +85,6 @@ class AppConfig(object):
     MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD", "unknown")
     MONGODB_CONN = f"mongodb://{MONGODB_USER}:{MONGODB_PASSWORD}@{MONGODB_HOST}:{MONGODB_PORT}/"
     MONGODB_STAGING = "staging"
-    MONGODB_TEMP = "temp"
-
+    MONGODB_CACHING = "caching"
 
 config = AppConfig()
