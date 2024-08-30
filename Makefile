@@ -2,6 +2,12 @@
 # Setup containers to run Airflow
 NETWORK_NAME=data-network
 
+install:
+	@echo "Run install docker"
+	@chmod +x ./scripts/install_docker.sh
+	@./scripts/install_docker.sh
+	@echo "Run install docker complete"
+
 init:
 	@echo "Run init project"
 	@chmod +x ./scripts/init_project.sh
