@@ -19,6 +19,11 @@ up:
 	@cd ./airflow && docker compose up -d --build && cd ..
 	@echo "Spin up Airflow complete"
 
+domain:
+	@echo "Setup domain"
+	@cd ./airflow && ddocker compose up -d --build -f docker-compose.yaml && cd ..
+	@echo "Setup domain complete"
+
 ## Airflow Webserver
 
 ui:
