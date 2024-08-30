@@ -1,26 +1,26 @@
-# name: CD Pipeline
+name: CD Pipeline
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v3
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-#       - name: Login to VM using SSH and deploy code
-#         uses: appleboy/ssh-action@v1.0.3
-#         with:
-#           host: ${{ secrets.VM_HOST }}  # Replace with your VM hostname
-#           username: ${{ secrets.VM_USERNAME }}  # Replace with your VM username
-#           key: ${{ secrets.VM_SSH_KEY }}  # Replace with your VM SSH key (private key content)
-#           script: |
-#             cd sapp-data-engineering
-#             git pull origin main
+      - name: Login to VM using SSH and deploy code
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}  # Replace with your VM hostname
+          username: ${{ secrets.VM_USERNAME }}  # Replace with your VM username
+          key: ${{ secrets.VM_SSH_KEY }}  # Replace with your VM SSH key (private key content)
+          script: |
+            cd sapp-data-engineering
+            git pull origin main
 
-# env:
-#   CI: true  # Optional, set an environment variable
+env:
+  CI: true  # Optional, set an environment variable
