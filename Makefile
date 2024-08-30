@@ -21,7 +21,7 @@ up:
 
 domain:
 	@echo "Setup domain"
-	@cd ./airflow && ddocker compose up -d --build -f docker-compose.yaml && cd ..
+	@cd ./airflow && docker compose up -d --build -f docker-compose.yaml && cd ..
 	@echo "Setup domain complete"
 
 ## Airflow Webserver
