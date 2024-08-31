@@ -298,10 +298,26 @@ services:
     networks:
       - data-network
 
+  nginx:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: always
+    ports:
+      # These ports are in format <host-port>:<container-port>
+      - '80:80' # Public HTTP Port
+      - '443:443' # Public HTTPS Port
+      - '81:81' # Admin Web Port
+    volumes:
+      - nginx-data:/data
+      - nginx-letsencrypt:/etc/letsencrypt
+    networks:
+      - data-network
+
 volumes:
   postgres-db-volume:
   mongodb:
   mongoconfig:
+  nginx-data:
+  nginx-letsencrypt:
 
 networks:
   data-network:
