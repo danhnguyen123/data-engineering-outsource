@@ -268,56 +268,8 @@ services:
     networks:
       - data-network
 
-  mongodb:
-    image: mongo
-    hostname: mongodb
-    container_name: mongodb    
-    restart: always
-    ports:
-      - 27017:27017
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root123
-      # MONGO_INITDB_DATABASE: staging
-    volumes:
-      - mongodb:/data/db
-      - mongoconfig:/data/configdb
-    networks:
-      - data-network
-
-  mongo-express:
-    image: mongo-express
-    restart: always
-    ports:
-      - 8081:8081
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: root123
-      ME_CONFIG_MONGODB_URL: mongodb://root:root123@mongodb:27017/
-      ME_CONFIG_BASICAUTH: false
-    networks:
-      - data-network
-
-  nginx:
-    image: 'jc21/nginx-proxy-manager:latest'
-    restart: always
-    ports:
-      # These ports are in format <host-port>:<container-port>
-      - '80:80' # Public HTTP Port
-      - '443:443' # Public HTTPS Port
-      - '81:81' # Admin Web Port
-    volumes:
-      - nginx-data:/data
-      - nginx-letsencrypt:/etc/letsencrypt
-    networks:
-      - data-network
-
 volumes:
   postgres-db-volume:
-  mongodb:
-  mongoconfig:
-  nginx-data:
-  nginx-letsencrypt:
 
 networks:
   data-network:

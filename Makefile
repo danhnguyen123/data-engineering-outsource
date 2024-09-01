@@ -14,14 +14,21 @@ init:
 	@./scripts/init_project.sh $(NETWORK_NAME)
 	@echo "Run init project complete"
 
+depend: mongodb nginx
+
 up:
 	@echo "Spin up Airflow"
 	@cd ./airflow && docker compose up -d --build && cd ..
 	@echo "Spin up Airflow complete"
 
-domain:
+mongodb:
 	@echo "Setup domain"
-	@cd ./airflow && docker compose -f docker-compose-plus.yaml up -d --build && cd ..
+	@cd ./mongodb && docker compose -f docker-compose.yaml up -d --build && cd ..
+	@echo "Setup domain complete"
+
+nginx:
+	@echo "Setup domain"
+	@cd ./nginx && docker compose -f docker-compose.yaml up -d --build && cd ..
 	@echo "Setup domain complete"
 
 ## Airflow Webserver
@@ -34,6 +41,6 @@ down:
 	@cd ./airflow && docker compose down && cd ..
 	@echo "Shutdown Airflow complete"
 
-deploy: init up
+deploy: init depend up
 
 restart: down up

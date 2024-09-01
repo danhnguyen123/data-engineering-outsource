@@ -91,7 +91,7 @@ class InvoiceDetailsETL:
             # self.mongodb.insert_one(database=config.MONGODB_STAGING, collection=self.table_name, document={"_id": invoice_id, **result})
             self.mongodb.update_one(database=config.MONGODB_STAGING, collection=self.table_name, 
                                     contition={"_id": invoice_id}, 
-                                    update_query={"$set": invoice},
+                                    update_query={"$set": result},
                                     upsert=True
                                     )
 

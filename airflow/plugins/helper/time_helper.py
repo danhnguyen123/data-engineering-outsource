@@ -14,8 +14,11 @@ def get_start_date_format(date: str = "2024-01-01"):
     # Get current datetime in UTC+7
     date_time = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone(offset=timedelta(hours=7)))
 
+    # Convert to UTC and format as requested
+    date_time_utc = date_time.astimezone(pytz.utc)
+
     # Get start of current date (set hour, minute, second, microsecond to 0)
-    start_of_date = date_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_date = date_time_utc.replace(hour=0, minute=0, second=0, microsecond=0)
 
     return start_of_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
@@ -26,8 +29,13 @@ def get_end_date_format(date: str = "2024-01-01"):
     # Get current datetime in UTC+7
     date_time = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone(offset=timedelta(hours=7)))
 
-    # Get start of current date (set hour, minute, second, microsecond to 0)
-    end_of_date = date_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Convert to UTC and format as requested
+    date_time_utc = date_time.astimezone(pytz.utc)
+
+    start_of_date = date_time_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Get end of current date
+    end_of_date = start_of_date + timedelta(days=1) - timedelta(microseconds=1)
 
     return end_of_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
