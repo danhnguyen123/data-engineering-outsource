@@ -27,8 +27,10 @@ x-airflow-common:
     AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
     AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
     AIRFLOW__CODE_EDITOR__ENABLED: 'true'
-    AIRFLOW__CODE_EDITOR__MOUNT_NAME: 'plugins'
-    AIRFLOW__CODE_EDITOR__MOUNT_PATH: /opt/airflow/plugins
+    AIRFLOW__CODE_EDITOR__MOUNT: 'name=dags,path=/opt/airflow/dags'
+    AIRFLOW__CODE_EDITOR__MOUNT1: 'name=plugins,path=/opt/airflow/plugins'
+    # AIRFLOW__CODE_EDITOR__MOUNT2: 'name=tmp,path=/tmp'
+    AIRFLOW__WEBSERVER__WARN_DEPLOYMENT_EXPOSURE: False
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
