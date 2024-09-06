@@ -113,7 +113,7 @@ class LarkMessage(LarkHelper):
                 return "Success"
 
             else:
-                message = f"Error when getting tenant_access_token from Lark API, status_code: {response.status_code}, error: {response.text}"
+                message = f"Error when sending message to Lark API, status_code: {response.status_code}, error: {response.text}"
                 self.logger.error(message)
                 raise HTTPError(message)
 

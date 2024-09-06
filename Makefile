@@ -22,12 +22,12 @@ up:
 	@echo "Spin up Airflow complete"
 
 mongodb:
-	@echo "Setup domain"
+	@echo "Setup mongodb"
 	@cd ./mongodb && docker compose -f docker-compose.yaml up -d --build && cd ..
 	@echo "Setup domain complete"
 
 nginx:
-	@echo "Setup domain"
+	@echo "Setup nginx"
 	@cd ./nginx && docker compose -f docker-compose.yaml up -d --build && cd ..
 	@echo "Setup domain complete"
 

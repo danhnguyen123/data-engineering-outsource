@@ -6,23 +6,30 @@ import json
 from helper.logging_helper import LoggingHelper
 from helper.redis_helper import RedisHelper
 from helper.lark_helper import LarkMessage
+from airflow.utils.context import Context
 
 logger = LoggingHelper.get_logger(__name__)
 redis = RedisHelper(logger=logger, redis_host=config.REDIS_HOST, redis_port=config.REDIS_PORT)
 lark_message = LarkMessage(logger=logger, redis=redis)
 
-def on_failure_callback(context):
+def on_failure_callback(context: Context):
     print("Fail works  !  ")
-    # print(context)
-    # print(context['dag'])
-    # print(context['task'])
-    # print(context['task_instance'])
-    # print(context['exception'])
-
-    message = '[ERROR] {} {} \\n {}'.format(context['dag'],context['task'],context['exception'])
+    message = '[ERROR] {} {} \\n {}'.format(context['dag'],context['task'],str(context['exception']))
     message = str(message)
     lark_message.send_message(receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}, content = {'type':'text','content': message})
 
+def on_retry_callback(context: Context):
+    print("Retry works  !  ")
+    message = '[RETRY] {} {} \\n {}'.format(context['dag'],context['task'],str(context['exception']))
+    message = str(message)
+    lark_message.send_message(receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}, content = {'type':'text','content': message})
+
+def sla_miss_callback(context: Context):
+    print("Timeout  !  ")
+
+    message = '[TIMEOUT] {} {} \\n Start time: {} | End time: {}'.format(context['dag'],context['task'],context['ti'].start_date,context['ti'].end_date)
+    message = str(message)
+    lark_message.send_message(receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}, content = {'type':'text','content': message})
 
 # from airflow.providers.apache.beam.operators.beam import BeamRunPythonPipelineOperator
 # class BeamOperator(BeamRunPythonPipelineOperator):

@@ -16,7 +16,11 @@ from plugins.config import config
 from plugins.helper.logging_helper import LoggingHelper
 from plugins.helper.redis_helper import RedisHelper
 from plugins.helper.mongodb_helper import MongoDBHeler
-from plugins.helper.airflow_helper import on_failure_callback
+from plugins.helper.airflow_helper import (
+    on_failure_callback,
+    on_retry_callback,
+    sla_miss_callback
+)
 from plugins.helper.gcp_helper import GCSHelper, BQHelper
 import plugins.helper.time_helper as TimeHelper  
 
@@ -62,6 +66,9 @@ default_args = {
     'owner': 'danh.nguyen',
     'depends_on_past': False,
     'on_failure_callback': on_failure_callback,
+    'on_retry_callback': on_retry_callback,
+    'sla': pendulum.duration(minutes=2),
+    'sla_miss_callback': sla_miss_callback,
     'trigger_rule' : 'all_done', #https://marclamberti.com/blog/airflow-trigger-rules-all-you-need-to-know/
     'email': ['de@datalize.cloud'],
     'email_on_failure': False,
