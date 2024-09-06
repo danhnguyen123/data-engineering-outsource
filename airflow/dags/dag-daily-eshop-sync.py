@@ -108,12 +108,13 @@ def call_python_etl(namespace, table_name, task_name, vars, **kwargs):
 with DAG(
     'dag-daily-eshop-sync',
     default_args=default_args,
-    description='ETL Data from Misa Eshop to BigQuery',
+    description='ETL Data from Misa Eshop API to BigQuery',
     schedule_interval='*/5 * * * *' if config.ENV == "prod" else None, 
     start_date=datetime(2024, 1, 1, 0, tzinfo=local_tz),
     catchup=False,
     tags=["daily", 'elt','eshop', 'bigquery'],
-    params=contruct_params()
+    params=contruct_params(),
+    dag_display_name="Extract, Transform and Load data from Misa Eshop"
 ) as dag:
 
     start = EmptyOperator(task_id='start')
