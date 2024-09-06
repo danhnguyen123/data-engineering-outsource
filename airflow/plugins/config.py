@@ -76,9 +76,6 @@ class AppConfig(object):
 
     NEW_DATA = "has_new_data"
 
-    LARK_ALERT_GROUP_ID = ""
-
-
     MONGODB_HOST = os.getenv("MONGODB_HOST", "unknown")
     MONGODB_PORT =int(os.getenv("MONGODB_PORT"))
     MONGODB_USER = os.getenv("MONGODB_USER", "unknown")

@@ -97,11 +97,17 @@ class LarkMessage(LarkHelper):
         # content = {'type':'text','content':'hihi'}
         url = f"{config.LARK_OPEN_URL}/open-apis/im/v1/messages?receive_id_type={receiver['type']}"
 
+        content_json = {
+            content['type']: content['content']
+        }
+
         req_body = {
             "receive_id": receiver['id'],
             "msg_type": content['type'],
-            "content": "{" + f''' "{content['type']}": "{content['content']}" ''' + "}"
+            "content": json.dumps(content_json)
         }
+
+        req_body
 
         payload = json.dumps(req_body)
 

@@ -14,22 +14,24 @@ lark_message = LarkMessage(logger=logger, redis=redis)
 
 def on_failure_callback(context: Context):
     print("Fail works  !  ")
-    message = '[ERROR] {} {} \\n {}'.format(context['dag'],context['task'],str(context['exception']))
-    message = str(message)
-    lark_message.send_message(receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}, content = {'type':'text','content': message})
+    message = '[ERROR] {} {} \n {}'.format(context['dag'],context['task'],str(context['exception']))
+    receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}
+    content = {'type':'text','content': message}
+    lark_message.send_message(receiver=receiver, content=content)
 
 def on_retry_callback(context: Context):
     print("Retry works  !  ")
-    message = '[RETRY] {} {} \\n {}'.format(context['dag'],context['task'],str(context['exception']))
-    message = str(message)
-    lark_message.send_message(receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}, content = {'type':'text','content': message})
+    message = '[RETRY] {} {} \n {}'.format(context['dag'],context['task'],str(context['exception']))
+    receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}
+    content = {'type':'text','content': message}
+    lark_message.send_message(receiver=receiver, content=content)
 
 def sla_miss_callback(context: Context):
     print("Timeout  !  ")
-
-    message = '[TIMEOUT] {} {} \\n Start time: {} | End time: {}'.format(context['dag'],context['task'],context['ti'].start_date,context['ti'].end_date)
-    message = str(message)
-    lark_message.send_message(receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}, content = {'type':'text','content': message})
+    message = '[TIMEOUT] {} {} \n Start time: {} | End time: {}'.format(context['dag'],context['task'],context['ti'].start_date,context['ti'].end_date)
+    receiver = {'type':'chat_id','id':config.LARK_ALERT_GROUP_ID}
+    content = {'type':'text','content': message}
+    lark_message.send_message(receiver=receiver, content=content)
 
 # from airflow.providers.apache.beam.operators.beam import BeamRunPythonPipelineOperator
 # class BeamOperator(BeamRunPythonPipelineOperator):
