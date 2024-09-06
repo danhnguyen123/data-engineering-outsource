@@ -80,8 +80,8 @@ default_args = {
 
 def contruct_params():
     params={
-        "start_date": "2024-08-12",
-        "end_date": "2024-08-12"
+        "start_date": TimeHelper.get_start_current_date_format(),
+        "end_date": TimeHelper.get_end_current_date_format(),
     }
     for table in eshop_tables_list:
         params.update({
