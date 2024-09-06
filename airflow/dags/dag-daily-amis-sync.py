@@ -103,7 +103,8 @@ with DAG(
     start_date=datetime(2024, 1, 1, 0, tzinfo=local_tz),
     catchup=False,
     tags=["daily", 'elt','amis', 'bigquery'],
-    params=contruct_params()
+    params=contruct_params(),
+    dag_display_name="ETL data from Misa Amis dailly"
 ) as dag:
 
     start = EmptyOperator(task_id='start')

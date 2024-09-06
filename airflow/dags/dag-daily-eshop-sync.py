@@ -114,7 +114,7 @@ with DAG(
     catchup=False,
     tags=["daily", 'elt','eshop', 'bigquery'],
     params=contruct_params(),
-    dag_display_name="Extract, Transform and Load data from Misa Eshop"
+    dag_display_name="ETL data from Misa Eshop every 5 minutes"
 ) as dag:
 
     start = EmptyOperator(task_id='start')
