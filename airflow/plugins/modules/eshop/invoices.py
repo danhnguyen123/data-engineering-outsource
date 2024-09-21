@@ -44,8 +44,8 @@ class InvoicesETL:
         self.start_date = self.context['dag_run'].conf.get('start_date') if self.context['dag_run'].conf.get('start_date') else self.vars["start_date"] 
         self.end_date = self.context['dag_run'].conf.get('end_date') if self.context['dag_run'].conf.get('end_date') else self.vars["end_date"] 
         self.dataset_staging_id = config.DATASET_STAGING_ID
-        self.start_datetime = TimeHelper.format_iso_date(self.start_date)
-        self.end_datetime = TimeHelper.format_iso_date(self.end_date)
+        self.start_datetime = TimeHelper.format_iso_date(TimeHelper.get_start_datetime_of_date(self.start_date))
+        self.end_datetime = TimeHelper.format_iso_date(TimeHelper.get_end_datetime_of_date(self.end_date))
 
     def extract(self):
         """
