@@ -80,8 +80,8 @@ default_args = {
 
 def contruct_params():
     params={
-        "start_date": TimeHelper.get_start_current_date_format(),
-        "end_date": TimeHelper.get_end_current_date_format(),
+        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
     }
     for table in eshop_tables_list:
         params.update({
@@ -141,8 +141,8 @@ with DAG(
                     "table_name": INVOICES,
                     "task_name": "extract",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
-                        "end_date": TimeHelper.get_end_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
                     }
                 }
                 )
@@ -156,8 +156,8 @@ with DAG(
                     "table_name": INVOICES,
                     "task_name": "transform",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
-                        "end_date": TimeHelper.get_end_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
                     }
                 }
                 )
@@ -171,8 +171,8 @@ with DAG(
                     "table_name": INVOICES,
                     "task_name": "load",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
-                        "end_date": TimeHelper.get_end_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
                     }
                 }
                 )
@@ -193,8 +193,8 @@ with DAG(
                     "table_name": INVOICE_DETAILS,
                     "task_name": "extract",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
-                        "end_date": TimeHelper.get_end_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
                     }
                 }
                 )
@@ -208,8 +208,8 @@ with DAG(
                     "table_name": INVOICE_DETAILS,
                     "task_name": "transform",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
-                        "end_date": TimeHelper.get_end_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
                     }
                 }
                 )
@@ -223,8 +223,8 @@ with DAG(
                     "table_name": INVOICE_DETAILS,
                     "task_name": "load",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
-                        "end_date": TimeHelper.get_end_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
                     }
                 }
                 )
@@ -243,7 +243,7 @@ with DAG(
                     "table_name": INVENTORY_ITEMS,
                     "task_name": "extract",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
                     }
                 }
                 )
@@ -257,7 +257,7 @@ with DAG(
                     "table_name": INVENTORY_ITEMS,
                     "task_name": "transform",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
                     }
                 }
                 )
@@ -271,7 +271,7 @@ with DAG(
                     "table_name": INVENTORY_ITEMS,
                     "task_name": "load",
                     "vars": {
-                        "start_date": TimeHelper.get_start_current_date_format(),
+                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
                     }
                 }
                 )

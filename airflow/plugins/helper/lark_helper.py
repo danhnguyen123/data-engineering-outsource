@@ -107,8 +107,6 @@ class LarkMessage(LarkHelper):
             "content": json.dumps(content_json)
         }
 
-        req_body
-
         payload = json.dumps(req_body)
 
         try:
