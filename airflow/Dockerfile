@@ -8,11 +8,7 @@ RUN apt-get update \
     && apt-get -y install libpq-dev gcc gosu git wget
     # && pip install psycopg2
 
-RUN apt-get update && apt-get install -y \
-    openjdk-17-jdk
-
-# Verify that Java was installed
-RUN java -version
+RUN apt-get update && apt-get install -y
 
 USER airflow
 

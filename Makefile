@@ -14,7 +14,7 @@ init:
 	@./scripts/init_project.sh $(NETWORK_NAME)
 	@echo "Run init project complete"
 
-depend: mongodb nginx
+depend: mongodb
 
 up:
 	@echo "Spin up Airflow"
