@@ -4,6 +4,8 @@ from dateutil.parser import parse
 import pytz
 from config import config
 
+tz = pytz.timezone("Asia/Bangkok")
+
 def get_now_iso_date():
     return datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
@@ -33,12 +35,18 @@ def get_end_delta_date_format(delta=0, step=0):
 def get_start_datetime_of_date(date):
     date_time = datetime.strptime(date, "%Y-%m-%d")
     start_of_date = date_time.replace(hour=0, minute=0, second=0, microsecond=0)
-    start_of_date_at_utc = start_of_date - timedelta(hours=7)
-    return start_of_date_at_utc
+    dt_local = tz.localize(start_of_date)
+    dt_utc = dt_local.astimezone(pytz.utc)
+    return dt_utc
 
 def get_end_datetime_of_date(date):
     date_time = datetime.strptime(date, "%Y-%m-%d")
     start_of_date = date_time.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_date = start_of_date + timedelta(days=1) - timedelta(microseconds=1)
-    end_of_date_at_utc = end_of_date - timedelta(hours=7)
-    return end_of_date_at_utc
+    dt_local = tz.localize(end_of_date)
+    dt_utc = dt_local.astimezone(pytz.utc)
+    return dt_utc
+
+def get_unix_timestamp(datetime: datetime):
+    return int(datetime.timestamp())
+

@@ -84,4 +84,8 @@ class AppConfig(object):
     MONGODB_STAGING = "staging"
     MONGODB_CACHING = "caching"
 
+    DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK", "unknown")
+
+    PANCAKE_TIMEOUT = 30
+
 config = AppConfig()

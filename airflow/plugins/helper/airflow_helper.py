@@ -7,11 +7,18 @@ from helper.logging_helper import LoggingHelper
 from helper.redis_helper import RedisHelper
 from helper.lark_helper import LarkMessage
 from airflow.utils.context import Context
+from helper.discord_helper import send_discord_message
 
 logger = LoggingHelper.get_logger(__name__)
 redis = RedisHelper(logger=logger, redis_host=config.REDIS_HOST, redis_port=config.REDIS_PORT)
 lark_message = LarkMessage(logger=logger, redis=redis)
 
+
+def on_failure_callback_discord(context: Context):
+    print("Fail works  !  ")
+    message = '[ERROR] {} {} \n {}'.format(context['dag'],context['task'],str(context['exception']))
+    send_discord_message(config.DISCORD_WEBHOOK, content=message)
+    
 def on_failure_callback(context: Context):
     print("Fail works  !  ")
     message = '[ERROR] {} {} \n {}'.format(context['dag'],context['task'],str(context['exception']))

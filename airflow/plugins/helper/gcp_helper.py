@@ -147,3 +147,13 @@ class BQHelper:
     #     except Exception as e:
     #         print(e)
     #         return False, str(e)
+
+    def get_columns(self, dataset_id, table_id):
+        # Get the table schema
+        table_ref = self.client.dataset(dataset_id).table(table_id)
+        table = self.client.get_table(table_ref)
+
+        # Extract column names
+        column_names = [field.name for field in table.schema]
+
+        return column_names

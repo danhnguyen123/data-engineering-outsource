@@ -1,3 +1,5 @@
 .env
 service-account.json
 amis_web_config.py
+env.py
+env.txt
