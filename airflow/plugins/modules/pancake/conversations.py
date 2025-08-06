@@ -10,7 +10,7 @@ import helper.time_helper as TimeHelper
 from config import config
 from helper.pancake_helper import PancakeHelper
 
-class PageCustomerETL:
+class ConversationsETL:
     def __init__(
             self,
             logger: Logger, 
@@ -54,29 +54,36 @@ class PageCustomerETL:
 
         self.logger.debug(f"start - {self.start_datetime} | end - {self.end_datetime}")
 
+        self.page_access_token = self.vars.get("page").get("page_access_token")
+        self.page_id = self.vars.get("page").get("page_id")
+        self.platform = self.vars.get("page").get("platform")
+        self.page_name = self.vars.get("page").get("name")
+        self.pancake_url = self.vars.get("page").get("pancake_url")
+        self.conversation_redis_key = f"{self.page_id}_conversations"
+
         page = 1
-        page_access_token = self.vars.get("page").get("page_access_token")
-        page_id = self.vars.get("page").get("page_id")
-        platform = self.vars.get("page").get("platform")
-        page_name = self.vars.get("page").get("name")
 
         df = pd.DataFrame()
+
+        last_conversation_id = None
 
         while True:
             self.logger.debug(f"Get data {self.table_name} from Pancake | page {page}")
             
-            results = self.pancake.get_page_customer(
-                page_access_token=page_access_token,
-                page_id=page_id,
+            results = self.pancake.get_conversations(
+                page_access_token=self.page_access_token,
+                page_id=self.page_id,
+                last_conversation_id=last_conversation_id,
                 since=self.start_datetime,
-                until=self.end_datetime,
-                page_number=page
+                until=self.end_datetime
             )
 
             if not results:
+                self.logger.debug(f"Emtry Result: {results}")
                 break
-
+        
             df = pd.concat([df, pd.DataFrame(results)], ignore_index=True)
+            last_conversation_id = results[-1].get("id")
             page += 1
 
         if df.empty:
@@ -85,27 +92,54 @@ class PageCustomerETL:
         
         self.logger.debug(f"The DataFrame has {len(df)} rows.")
 
+        # Transform
+
         expected_columns = [
             'id',
-            'name',
-            'gender',
-            'lives_in',
-            'birthday',
-            'phone_numbers',
+            'type',
+            'tags',
+            'seen',
+            'from',
             'inserted_at',
             'updated_at',
-            'customer_id'
+            'message_count',
+            'page_id',
+            'last_sent_by',
+            'recent_phone_numbers',
+            'page_customer',
+            'ad_ids',
         ]
 
         available_columns = [col for col in expected_columns if col in df.columns]
 
         df = df[available_columns]
 
-        df["phone_numbers"] = df["phone_numbers"].apply(lambda lst: lst[0] if isinstance(lst, list) and lst else None)
+        df['tags'] = df['tags'].apply(self.extract_tag_texts)
+        df["from"] = df["from"].apply(lambda x: {"id": x.get("id"), "name": x.get("name")} if isinstance(x, dict) else None)
+
         df['inserted_at'] = pd.to_datetime(df['inserted_at'], errors='coerce').dt.floor('S')
-        df['updated_at'] = pd.to_datetime(df['updated_at'], errors='coerce').dt.floor('S')        
-        df["platform"] = platform
-        df["page_name"] = page_name
+        df['updated_at'] = pd.to_datetime(df['updated_at'], errors='coerce').dt.floor('S')
+
+        df["last_sent_by"] = df["last_sent_by"].apply(lambda x: {"admin_id": x.get("admin_id"), "admin_name": x.get("admin_name")} if isinstance(x, dict) else None)
+        df['recent_phone_numbers'] = df['recent_phone_numbers'].apply(self.extract_recent_phone_numbers)
+
+        df["page_customer"] = df["page_customer"].apply(
+            lambda x: {"id": x.get("id"), 
+                       "name": x.get("name"),
+                       "customer_id": x.get("customer_id"), 
+                       "psid": x.get("psid"),
+                       "global_id": x.get("global_id"),
+                       } 
+            if x else None
+            )
+
+        df["platform"] = self.platform
+        df["page_name"] = self.page_name
+        df["link"] = f"{self.pancake_url}?c_id=" + df["id"]
+
+        df = df.rename(columns={'from': 'customers'})
+
+        # print(df['tags'])
 
         # Config for load process
         self.table_cols = list(df.columns)
@@ -113,6 +147,11 @@ class PageCustomerETL:
         # Load staging table
         self.logger.debug(f"The DataFrame has {len(df)} rows.")
         self.bq.bq_append(update_data=df, table_name=self.table_name, dataset_id=self.dataset_staging_id, load_method="load_parquet")
+
+        # Cache list conversation
+        conversation_list = df['id'].tolist()
+        self.redis.remove_cached_value_for_key(self.conversation_redis_key)
+        self.redis.put_cached_value_for_as_list(self.conversation_redis_key, conversation_list)
 
         return "Success"  
 
@@ -152,3 +191,13 @@ class PageCustomerETL:
         self.bq.execute(f"truncate table `{self.project_id}.{self.dataset_staging_id}.{self.table_name}`")
 
         return "Success"  
+    
+    def extract_tag_texts(self, tag_list):
+        if isinstance(tag_list, list):
+            return [str(tag.get('text')) for tag in tag_list if isinstance(tag, dict) and 'text' in tag]
+        return [] 
+    
+    def extract_recent_phone_numbers(self, recent_phone_numbers):
+        if isinstance(recent_phone_numbers, list):
+            return [phone['phone_number'] for phone in recent_phone_numbers if isinstance(phone, dict) and 'phone_number' in phone]
+        return [] 

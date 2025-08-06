@@ -30,7 +30,9 @@ class PancakeHelper:
         return session
     
     def get_page_customer(self, page_access_token, page_id, since, until, page_number=1, page_size=100, order_by="updated_at"):
-
+        '''
+        https://docs.pancake.biz/pancake/st-f12/st-p2?lang=vi#5ec5a02c-75d3-440d-900b-0567e8acc227
+        '''
         url = f"https://pages.fm/api/public_api/v1/pages/{page_id}/page_customers"
         params = {
             "page_access_token": page_access_token,
@@ -61,8 +63,7 @@ class PancakeHelper:
         '''
         https://docs.pancake.biz/pancake/st-f12/st-p2?lang=vi#103388f8-a942-4754-8504-fb001065c423
         '''
-
-        url = f"https://pages.fm/api/public_api/v1/pages/{page_id}/page_customers"
+        url = f"https://pages.fm/api/public_api/v2/pages/{page_id}/conversations"
         params = {
             "page_access_token": page_access_token,
             "since": since,
@@ -77,6 +78,7 @@ class PancakeHelper:
             params.update({"until": until})
 
         try:
+            # self.logger.debug(f"params {params}")
             response = self.session.get(url=url, params=params, timeout=config.PANCAKE_TIMEOUT)
             response_json = response.json()
 
@@ -86,6 +88,35 @@ class PancakeHelper:
 
             else:
                 message = f"Error when getting list conversations from Pancake, status_code: {response.status_code}, error: {response.text}"
+                self.logger.error(message)
+                raise HTTPError(message)
+            
+        except Exception as e:
+            raise e
+        
+    def get_messages(self, page_access_token, page_id, conversation_id, current_count=None):
+        '''
+        https://docs.pancake.biz/pancake/st-f12/st-p2?lang=vi#103388f8-a942-4754-8504-fb001065c423
+        '''
+
+        url = f"https://pages.fm/api/public_api/v1/pages/{page_id}/conversations/{conversation_id}/messages"
+        params = {
+            "page_access_token": page_access_token,
+        }
+        if current_count:
+            params.update({"current_count": current_count})
+
+        try:
+            response = self.session.get(url=url, params=params, timeout=config.PANCAKE_TIMEOUT)
+            response_json = response.json()
+
+            if response.status_code == 200:
+                messages = response_json.get("messages")
+                # del response_json["messages"]
+                return messages
+
+            else:
+                message = f"Error when getting list messages from Pancake, status_code: {response.status_code}, error: {response.text}"
                 self.logger.error(message)
                 raise HTTPError(message)
             

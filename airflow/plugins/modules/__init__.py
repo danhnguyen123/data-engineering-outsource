@@ -6,3 +6,5 @@ from plugins.modules.amis.supply_goods import SupplyGoodsETL
 from plugins.modules.amis.stock import StocksETL
 
 from plugins.modules.pancake.page_customer import PageCustomerETL
+from plugins.modules.pancake.conversations import ConversationsETL
+from plugins.modules.pancake.messages import MessagesETL

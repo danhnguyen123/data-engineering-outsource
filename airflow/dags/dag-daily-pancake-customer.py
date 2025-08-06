@@ -22,25 +22,32 @@ import plugins.helper.time_helper as TimeHelper
 import envs.env as env
 
 from plugins.helper.pancake_helper import PancakeHelper
-from plugins.modules import (
-    PageCustomerETL,
-)
+from plugins.modules.pancake.page_customer import PageCustomerETL
+from plugins.modules.pancake.conversations import ConversationsETL
+from plugins.modules.pancake.messages import MessagesETL
 
 PANCAKE_NAMESPACE = 'pancake'
 CUSTOMERS = 'customers'
+CONVERSATIONS = 'conversations'
+MESSAGES = 'messages'
 
 local_tz = pendulum.timezone(config.DWH_TIMEZONE)
 
 logger = LoggingHelper.get_configured_logger(__name__)
 bq = BQHelper(logger=logger)
+redis = RedisHelper(logger=logger, redis_host=config.REDIS_HOST, redis_port=config.REDIS_PORT)
 
 pancake = PancakeHelper(logger=logger)
 
 mapping_etl = {
     CUSTOMERS: PageCustomerETL,
+    CONVERSATIONS: ConversationsETL,
+    MESSAGES: MessagesETL
 }
 
-pancake_tables_list = [CUSTOMERS]
+UPSTREAM_TABLES_LIST = [CUSTOMERS, CONVERSATIONS]
+
+DOWNSTREAM_TABLES_LIST = [MESSAGES]
 
 default_args = {
     'owner': 'danh.nguyen',
@@ -51,14 +58,22 @@ default_args = {
     'email': ['de@datalize.cloud'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 2 if config.ENV == "prod" else 1,
+    'retries': 1 if config.ENV == "prod" else 1,
     'retry_delay': timedelta(minutes=1),
     'catchup' : False,
 }
 
 def contruct_params():
     params={}
-    for table in pancake_tables_list:
+    for table in UPSTREAM_TABLES_LIST:
+        params.update({
+            table: {
+                "extract": True,
+                "load": True
+            }              
+        })
+
+    for table in DOWNSTREAM_TABLES_LIST:
         params.update({
             table: {
                 "extract": True,
@@ -76,6 +91,7 @@ def call_python_etl(namespace, table_name, task_name, vars, **kwargs):
         table_name=table_name,
         pancake=pancake,
         bq=bq,
+        redis=redis,
         namespace=namespace,
         vars=vars,
         context=kwargs
@@ -100,46 +116,93 @@ with DAG(
 
     with TaskGroup(PANCAKE_NAMESPACE, tooltip=f"Update all thing for {PANCAKE_NAMESPACE}") as etl_group:
 
-        for table in pancake_tables_list:
+        with TaskGroup("Upstream", tooltip=f"Update all thing for {PANCAKE_NAMESPACE}") as upstream:
 
-            with TaskGroup(table, tooltip=f"Update all thing for {table}") as task_group:
+            for table in UPSTREAM_TABLES_LIST:
 
-                with TaskGroup(f"extract_{table}", tooltip=f"Update all thing for pages") as extract_page_group:
+                with TaskGroup(table, tooltip=f"Update all thing for {table}") as task_group:
 
-                    for page in env.pancake_page:
+                    with TaskGroup(f"extract_{table}", tooltip=f"Update all thing for pages") as extract_page_group:
 
-                        extract = PythonOperator(
-                            task_id=f"extract_{table}_{page.get('index')}",
-                            python_callable=call_python_etl,
-                            provide_context=True,
-                            op_kwargs={
-                                "namespace": PANCAKE_NAMESPACE,
-                                "table_name": table,
-                                "task_name": "extract",
-                                "vars": {
-                                    "start_date": TimeHelper.get_start_delta_date_format(delta=1),
-                                    "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
-                                    "page": page
+                        for page in env.pancake_page:
+
+                            extract = PythonOperator(
+                                task_id=f"extract_{table}_{page.get('index')}",
+                                python_callable=call_python_etl,
+                                provide_context=True,
+                                op_kwargs={
+                                    "namespace": PANCAKE_NAMESPACE,
+                                    "table_name": table,
+                                    "task_name": "extract",
+                                    "vars": {
+                                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                                        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
+                                        "page": page
+                                    }
                                 }
+                                )
+                    
+                    load = PythonOperator(
+                        task_id= f"load_{table}",
+                        python_callable=call_python_etl,
+                        provide_context=True,
+                        op_kwargs={
+                            "namespace": PANCAKE_NAMESPACE,
+                            "table_name": table,
+                            "task_name": "load",
+                            "vars": {
+                                "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                                "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1)                      
                             }
-                            )
-                
-                load = PythonOperator(
-                    task_id= f"load_{table}",
-                    python_callable=call_python_etl,
-                    provide_context=True,
-                    op_kwargs={
-                        "namespace": PANCAKE_NAMESPACE,
-                        "table_name": table,
-                        "task_name": "load",
-                        "vars": {
-                            "start_date": TimeHelper.get_start_delta_date_format(delta=1),
-                            "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),                            
                         }
-                    }
-                    )
-            
-                extract_page_group >> load
+                        )
+                
+                    extract_page_group >> load
+
+        with TaskGroup("Downstream", tooltip=f"Update all thing for {PANCAKE_NAMESPACE}") as downstream:
+
+            for table in DOWNSTREAM_TABLES_LIST:
+
+                with TaskGroup(table, tooltip=f"Update all thing for {table}") as task_group:
+
+                    with TaskGroup(f"extract_{table}", tooltip=f"Update all thing for pages") as extract_page_group:
+
+                        for page in env.pancake_page:
+
+                            extract = PythonOperator(
+                                task_id=f"extract_{table}_{page.get('index')}",
+                                python_callable=call_python_etl,
+                                provide_context=True,
+                                op_kwargs={
+                                    "namespace": PANCAKE_NAMESPACE,
+                                    "table_name": table,
+                                    "task_name": "extract",
+                                    "vars": {
+                                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                                        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
+                                        "page": page
+                                    }
+                                }
+                                )
+                    
+                    load = PythonOperator(
+                        task_id= f"load_{table}",
+                        python_callable=call_python_etl,
+                        provide_context=True,
+                        op_kwargs={
+                            "namespace": PANCAKE_NAMESPACE,
+                            "table_name": table,
+                            "task_name": "load",
+                            "vars": {
+                                "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                                "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),                            
+                            }
+                        }
+                        )
+                
+                    extract_page_group >> load      
+
+        upstream >> downstream  
 
     start >> etl_group >> end
 

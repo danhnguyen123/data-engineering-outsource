@@ -88,22 +88,24 @@ class BQHelper:
             return False
         return data_frame
     
-    def bq_append(self, update_data, table_name, dataset_id, if_exists='append', project_id=config.PROJECT_ID):
+    def bq_append(self, update_data, table_name, dataset_id, if_exists='append', load_method="load_csv", project_id=config.PROJECT_ID):
         if update_data is None or update_data.shape[0] == 0:
             return False, "Empty DataFrame"
             # update_data=load_data.copy()
 
         table_id = f'{project_id}.{dataset_id}.{table_name}'
 
-        for c in update_data.columns:
-            type = str(update_data[c].dtypes)
-            if type  == 'object':
-                update_data[c] = update_data[c].astype("string")
-            elif type  == 'datetime64[ns, UTC]':
-                update_data[c] = update_data[c].dt.strftime(config.DWH_TIME_FORMAT)
-                update_data[c] = pd.to_datetime(update_data[c],errors='coerce',format="%Y-%m-%d %H:%M:%S")
         try:
-            pandas_gbq.to_gbq(update_data, destination_table=table_id,chunksize=50000,if_exists=if_exists,credentials=self.credentials, api_method="load_csv")
+            if load_method == "load_csv":
+                for c in update_data.columns:
+                    type = str(update_data[c].dtypes)
+                    if type  == 'object':
+                        update_data[c] = update_data[c].astype("string")
+                    elif type  == 'datetime64[ns, UTC]':
+                        update_data[c] = update_data[c].dt.strftime(config.DWH_TIME_FORMAT)
+                        update_data[c] = pd.to_datetime(update_data[c],errors='coerce',format="%Y-%m-%d %H:%M:%S")
+
+            pandas_gbq.to_gbq(update_data, destination_table=table_id,chunksize=50000,if_exists=if_exists,credentials=self.credentials, api_method=load_method)
         except Exception as e:
             self.logger.error(e)
             raise e
