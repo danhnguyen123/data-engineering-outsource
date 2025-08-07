@@ -3,36 +3,37 @@ import pandas_gbq
 import pandas as pd
 from config import config
 from google.cloud import bigquery
+import requests
 
 def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFrame, bigquery_client: bigquery.Client):
     staging_table = f'{config.PROJECT_ID}.{config.DATASET_STAGING_ID}.{table_name}'
     destination_table = f'{config.PROJECT_ID}.{config.DATASET_ID}.{table_name}'
 
-    def upload_to_bq(df, table_id):
-        print(f"Uploading DataFrame to {table_id}")
-        pandas_gbq.to_gbq(
-            dataframe=df,
-            destination_table=table_id,
-            project_id=config.PROJECT_ID,
-            if_exists="replace"
-        )
-
     # --- Load to staging table ---
     try:
         bigquery_client.get_table(staging_table)
-        print(f"Staging table {staging_table} exists.")
     except Exception:
         print(f"Staging table {staging_table} does not exist. It will be created.")
-    upload_to_bq(dataframe, staging_table)
+
+    pandas_gbq.to_gbq(
+        dataframe=dataframe,
+        destination_table=staging_table,
+        project_id=config.PROJECT_ID,
+        if_exists="replace"
+    )
 
     # --- If destination table doesn't exist, create it directly ---
     try:
         bigquery_client.get_table(destination_table)
         print(f"Destination table {destination_table} exists. Proceeding with MERGE.")
-        table_exists = True
     except Exception:
         print(f"Destination table {destination_table} does not exist. Creating with full load.")
-        upload_to_bq(dataframe, destination_table)
+        pandas_gbq.to_gbq(
+            dataframe=dataframe,
+            destination_table=destination_table,
+            project_id=config.PROJECT_ID,
+            if_exists="replace"
+        )
         return "Success"
 
     # --- Prepare merge SQL ---
@@ -59,3 +60,10 @@ def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFr
     query_job.result()  # Wait for the job to finish
 
     return "Success"
+
+
+def send_discord_message(content):
+    data = {
+        "content": content  # Message content
+    }
+    response = requests.post(config.DISCORD_WEBHOOK, json=data)

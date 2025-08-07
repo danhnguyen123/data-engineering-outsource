@@ -18,4 +18,6 @@ class AppConfig(object):
     DATASET_ID = "myspa"
     DATASET_STAGING_ID = "staging"
 
+    DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK", "DISCORD_WEBHOOK")
+
 config = AppConfig()

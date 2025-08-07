@@ -57,4 +57,5 @@ jobs:
             --max-instances=1 \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --service-account ${{ secrets.GCP_SERVICE_ACCOUNT }} \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --set-env-vars "DISCORD_WEBHOOK=${{ secrets.DISCORD_WEBHOOK }}" \
