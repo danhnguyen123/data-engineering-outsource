@@ -27,8 +27,10 @@ def clean_column(name):
     name = unicodedata.normalize('NFD', name)
     name = name.encode('ascii', 'ignore').decode('utf-8')
     name = name.lower()
-    name = re.sub(r'[^\w\s]', '', name)
-    name = re.sub(r'\s+', '_', name)
-    name = re.sub(r'[^a-z0-9_]', '', name)
 
+    name = name.replace('/', '_')
+
+    name = re.sub(r'[^\w\s]', '', name)  
+    name = re.sub(r'\s+', '_', name)     
+    name = re.sub(r'[^a-z0-9_]', '', name) 
     return name
