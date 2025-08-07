@@ -4,51 +4,58 @@ import pandas
 from config import config
 from google.cloud import bigquery
 
-def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pandas.DataFrame, bigquery: bigquery.Client):
+def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFrame, bigquery_client: bigquery.Client):
+    staging_table = f'{config.PROJECT_ID}.{config.DATASET_STAGING_ID}.{table_name}'
+    destination_table = f'{config.PROJECT_ID}.{config.DATASET_ID}.{table_name}'
 
-    staging_table_id = f'{config.PROJECT_ID}.{config.DATASET_STAGING_ID}.{table_name}'
+    def upload_to_bq(df, table_id):
+        print(f"Uploading DataFrame to {table_id}")
+        pandas_gbq.to_gbq(
+            dataframe=df,
+            destination_table=table_id,
+            project_id=config.PROJECT_ID,
+            if_exists="replace"
+        )
 
-    print(f"Load table to staging table {staging_table_id}")
-    pandas_gbq.to_gbq(
-        dataframe=dataframe,
-        destination_table=staging_table_id,
-        if_exists="replace" 
-    )
-    
-    destination_table_id = f'{config.PROJECT_ID}.{config.DATASET_ID}.{table_name}'
-
+    # --- Load to staging table ---
     try:
-        bigquery.get_table(destination_table_id) 
-        print(f"Table {destination_table_id} exists.")
+        bigquery_client.get_table(staging_table)
+        print(f"Staging table {staging_table} exists.")
+    except Exception:
+        print(f"Staging table {staging_table} does not exist. It will be created.")
+    upload_to_bq(dataframe, staging_table)
+
+    # --- If destination table doesn't exist, create it directly ---
+    try:
+        bigquery_client.get_table(destination_table)
+        print(f"Destination table {destination_table} exists. Proceeding with MERGE.")
         table_exists = True
     except Exception:
-        print(f" Table {destination_table_id} does not exist.")
-        table_exists = False
-        print(f"Load table {destination_table_id}")
-        pandas_gbq.to_gbq(
-            dataframe=dataframe,
-            destination_table=destination_table_id,
-            if_exists="replace" 
-        )
+        print(f"Destination table {destination_table} does not exist. Creating with full load.")
+        upload_to_bq(dataframe, destination_table)
         return "Success"
 
-    on_clause = " and ".join([f"target.{col}=source.{col}" for col in identifier_cols])
+    # --- Prepare merge SQL ---
+    on_clause = " AND ".join([f"target.{col} = source.{col}" for col in identifier_cols])
+    update_clause = ", ".join([f"target.{col} = source.{col}" for col in dataframe.columns if col not in identifier_cols])
+    insert_columns = ", ".join(dataframe.columns)
+    insert_values = ", ".join([f"source.{col}" for col in dataframe.columns])
 
-    table_cols = list(dataframe.columns)
-
-    update_set_clause = ", ".join([f"target.{col} = source.{col}" for col in table_cols if col not in identifier_cols])
-    insert_values_clause = ", ".join([f"source.{col}" for col in table_cols])
-
-    merge_query = f"""
-    MERGE `{destination_table_id}` AS target
-    USING `{staging_table_id}` AS source
+    merge_sql = f"""
+    MERGE `{destination_table}` AS target
+    USING `{staging_table}` AS source
     ON {on_clause}
     WHEN MATCHED THEN
-        UPDATE SET {update_set_clause}
-    WHEN NOT MATCHED THEN 
-        INSERT ({", ".join(table_cols)}) 
-        VALUES ({insert_values_clause}) 
-    """ 
-    print(merge_query)
+      UPDATE SET {update_clause}
+    WHEN NOT MATCHED THEN
+      INSERT ({insert_columns})
+      VALUES ({insert_values})
+    """
 
-    query_job = bigquery.query(merge_query) 
+    print("Executing MERGE query:")
+    print(merge_sql)
+
+    query_job = bigquery_client.query(merge_sql)
+    query_job.result()  # Wait for the job to finish
+
+    return "Success"
