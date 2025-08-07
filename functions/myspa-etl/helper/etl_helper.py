@@ -1,6 +1,6 @@
 
 import pandas_gbq
-import pandas
+import pandas as pd
 from config import config
 from google.cloud import bigquery
 
