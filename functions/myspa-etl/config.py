@@ -12,6 +12,7 @@ class AppConfig(object):
         Load secret to config
         """
     ENV = os.getenv("ENV","dev")
+    SERVICE_NAME = 'myspa-etl'
     LOG_LEVEL = os.getenv("LOG_LEVEL", "debug")
 
     PROJECT_ID = "data-analytics-service"
