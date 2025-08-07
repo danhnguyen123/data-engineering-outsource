@@ -1,5 +1,5 @@
 import pandas as pd
-import re
+import re, unicodedata
 from io import BytesIO
 from helper.etl_helper import upsert_bigquery
 
@@ -24,8 +24,11 @@ def etl_customer(file_name, bucket, bq):
                     )
 
 def clean_column(name):
-    name = name.lower()  # lowercase
-    name = re.sub(r'[^\w\s]', '', name)  # remove special characters (keep word chars and space)
-    name = re.sub(r'\s+', '_', name)  # replace whitespace with underscore
-    return name
+    name = unicodedata.normalize('NFD', name)
+    name = name.encode('ascii', 'ignore').decode('utf-8')
+    name = name.lower()
+    name = re.sub(r'[^\w\s]', '', name)
+    name = re.sub(r'\s+', '_', name)
+    name = re.sub(r'[^a-z0-9_]', '', name)
 
+    return name
