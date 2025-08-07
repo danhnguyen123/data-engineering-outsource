@@ -5,13 +5,13 @@ from config import config
 from google.cloud import bigquery
 import requests
 
-def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFrame, bigquery_client: bigquery.Client):
+def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFrame, bigquery: bigquery.Client):
     staging_table = f'{config.PROJECT_ID}.{config.DATASET_STAGING_ID}.{table_name}'
     destination_table = f'{config.PROJECT_ID}.{config.DATASET_ID}.{table_name}'
 
     # --- Load to staging table ---
     try:
-        bigquery_client.get_table(staging_table)
+        bigquery.get_table(staging_table)
     except Exception:
         print(f"Staging table {staging_table} does not exist. It will be created.")
 
@@ -24,7 +24,7 @@ def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFr
 
     # --- If destination table doesn't exist, create it directly ---
     try:
-        bigquery_client.get_table(destination_table)
+        bigquery.get_table(destination_table)
         print(f"Destination table {destination_table} exists. Proceeding with MERGE.")
     except Exception:
         print(f"Destination table {destination_table} does not exist. Creating with full load.")
@@ -56,7 +56,7 @@ def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFr
     print("Executing MERGE query:")
     print(merge_sql)
 
-    query_job = bigquery_client.query(merge_sql)
+    query_job = bigquery.query(merge_sql)
     query_job.result()  # Wait for the job to finish
 
     return "Success"
