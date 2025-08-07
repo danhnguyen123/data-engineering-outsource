@@ -18,7 +18,7 @@ def main(event, context):
         bq = bigquery.Client()
 
         # Customer
-        if file_name.startswith('customers/') and file_name.endswith('.xlsx'):
+        if file_name.startswith('customer/') and file_name.endswith('.xlsx'):
             print(f"Processing file: {file_name}")
             etl_customer(file_name, bucket, bq)
         else:
