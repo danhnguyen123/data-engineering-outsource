@@ -1,6 +1,6 @@
 import io
 from typing import Dict, List, Optional, Type
-import json
+import json, time
 import pandas as pd
 from airflow.utils.context import Context
 from logging import Logger
@@ -85,6 +85,8 @@ class ConversationsETL:
             df = pd.concat([df, pd.DataFrame(results)], ignore_index=True)
             last_conversation_id = results[-1].get("id")
             page += 1
+
+            time.sleep(0.5)
 
         if df.empty:
             self.logger.debug(f"The DataFrame has no data rows. Skip")

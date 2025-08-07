@@ -1,6 +1,6 @@
 import io
 from typing import Dict, List, Optional, Type
-import json
+import json, time
 import pandas as pd
 from airflow.utils.context import Context
 from logging import Logger
@@ -78,6 +78,8 @@ class PageCustomerETL:
 
             df = pd.concat([df, pd.DataFrame(results)], ignore_index=True)
             page += 1
+            
+            time.sleep(0.5)
 
         if df.empty:
             self.logger.debug(f"The DataFrame has no data rows. Skip")
@@ -101,7 +103,7 @@ class PageCustomerETL:
 
         df = df[available_columns]
 
-        df["phone_numbers"] = df["phone_numbers"].apply(lambda lst: lst[0] if isinstance(lst, list) and lst else None)
+        # df["phone_numbers"] = df["phone_numbers"].apply(lambda lst: lst[0] if isinstance(lst, list) and lst else None)
         df['inserted_at'] = pd.to_datetime(df['inserted_at'], errors='coerce').dt.floor('S')
         df['updated_at'] = pd.to_datetime(df['updated_at'], errors='coerce').dt.floor('S')        
         df["platform"] = platform

@@ -1,6 +1,6 @@
 import io
 from typing import Dict, List, Optional, Type
-import json
+import json, time
 import pandas as pd
 from datetime import datetime, timedelta
 from airflow.utils.context import Context
@@ -109,6 +109,8 @@ class MessagesETL:
 
                 current_count = (current_count or 0) + len(messages)
                 page += 1
+
+                time.sleep(0.5)
 
             # Filter message
             df_conversation = df_conversation[df_conversation['inserted_at'].apply(lambda x: pd.to_datetime(x) >= filter_previous_commented)]

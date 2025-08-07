@@ -6,7 +6,8 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-vm:
+    name: Deploy to VM via SSH
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -15,12 +16,41 @@ jobs:
       - name: Login to VM using SSH and deploy code
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VM_HOST }}  # Replace with your VM hostname
-          username: ${{ secrets.VM_USERNAME }}  # Replace with your VM username
-          key: ${{ secrets.VM_SSH_KEY }}  # Replace with your VM SSH key (private key content)
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.VM_SSH_KEY }}
           script: |
             cd data-engineering-outsource
             git pull origin main
 
-env:
-  CI: true  # Optional, set an environment variable
+  deploy-cloud-function:
+    name: Deploy Google Cloud Function
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_WORKLOAD_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy Cloud Function
+        run: |
+          cd functions/myspa-etl
+          gcloud functions deploy myspa-etl \
+            --runtime python311 \
+            --trigger-resource myspa \
+            --trigger-event google.storage.object.finalize \
+            --entry-point main \
+            --region asia-southeast1 \
+            --memory 512MB \
+            --source . \
+            --timeout=600s \
+            --max-instances=1 \
+            --project ${{ secrets.GCP_PROJECT_ID }}
+            --service-account ${{ secrets.GCP_SERVICE_ACCOUNT }}

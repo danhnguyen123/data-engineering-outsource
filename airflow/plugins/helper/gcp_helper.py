@@ -4,6 +4,7 @@ from google.cloud import bigquery
 from google.cloud import storage
 import pandas as pd
 import pandas_gbq
+from io import BytesIO
 from config import config
 from logging import Logger
 
@@ -42,6 +43,11 @@ class GCSHelper:
         except:
             self.logger.error(f"Error when downloading from GCS://{self.bucket_name}/{blob.name}")    
 
+    def download_file(self, blob_name):
+        blob = self.bucket.blob(blob_name) 
+        file_bytes = blob.download_as_bytes()
+        file = BytesIO(file_bytes)
+        return file
 
 class BQHelper:
 

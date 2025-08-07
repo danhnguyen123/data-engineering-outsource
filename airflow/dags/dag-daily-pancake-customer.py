@@ -64,7 +64,10 @@ default_args = {
 }
 
 def contruct_params():
-    params={}
+    params={
+        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+        "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
+    }
     for table in UPSTREAM_TABLES_LIST:
         params.update({
             table: {

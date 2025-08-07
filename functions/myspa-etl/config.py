@@ -1,0 +1,21 @@
+import os
+# import dotenv
+# import yaml
+# dotenv.load_dotenv('/opt/airflow/envs/.env')
+
+class AppConfig(object):
+    """
+    Access environment variables here.
+    """
+    def __init__(self):
+        """
+        Load secret to config
+        """
+    ENV = os.getenv("ENV","dev")
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "debug")
+
+    PROJECT_ID = "data-analytics-service"
+    DATASET_ID = "myspa"
+    DATASET_STAGING_ID = "staging"
+
+config = AppConfig()
