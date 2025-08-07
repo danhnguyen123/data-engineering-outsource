@@ -24,11 +24,13 @@ def main(event, context):
         else:
             return "Skip"
         
+        print("Success")
         return "Success"
     
     except Exception as e:
         send_discord_message(f"Error myspa-etl, file {file_name}: {e}")
         # raise e
+        print(e)
         return "Fail"
 
 
