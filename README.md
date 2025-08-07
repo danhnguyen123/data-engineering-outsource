@@ -1,10 +1,10 @@
-# V25HD Data Engieering Project
+# Data Engieering Project
 
 Project to run pipeline by following this flow:
 
 ![Flow](./assets/flow.png)
 
-- [V25HD Data Engieering Project](#v25hd-data-engineering-project)
+- [Data Engieering Project](#v25hd-data-engineering-project)
   - [Setup](#setup)
     - [Create aliases for long commands with a Makefile](#create-aliases-for-long-commands-with-a-makefile)
     - [Run Airflow Webserver](#run-airflow-webserver)
@@ -51,8 +51,8 @@ In order to run the project you'll need to install the following:
 All the commands shown below are to be run via the terminal (use the Ubuntu terminal for WSL users). The `make` commands in this repo should be run in this repo. We will use docker to set up our containers. Clone and move into the lab repository, as shown below.
 
 ```bash
-git https://github.com/danhnguyen123/V25HD-Data-Engineering.git
-cd V25HD-Data-Engineering
+git https://github.com/danhnguyen123/data-engineering-outsource.git
+cd data-engineering-outsource
 # Start docker containers and create data for exercises and capstone project
 make init && make up
 ```
