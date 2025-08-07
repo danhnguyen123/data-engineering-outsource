@@ -55,5 +55,5 @@ jobs:
             --source . \
             --timeout=600s \
             --max-instances=1 \
-            --project ${{ secrets.GCP_PROJECT_ID }}
+            --project ${{ secrets.GCP_PROJECT_ID }} \
             --service-account ${{ secrets.GCP_SERVICE_ACCOUNT }}
