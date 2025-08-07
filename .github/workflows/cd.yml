@@ -56,4 +56,5 @@ jobs:
             --timeout=540s \
             --max-instances=1 \
             --project ${{ secrets.GCP_PROJECT_ID }} \
-            --service-account ${{ secrets.GCP_SERVICE_ACCOUNT }}
+            --service-account ${{ secrets.GCP_SERVICE_ACCOUNT }} \
+            --allow-unauthenticated
