@@ -4,6 +4,7 @@ import pandas as pd
 from config import config
 from google.cloud import bigquery
 import requests
+import re, unicodedata
 
 def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFrame, bigquery: bigquery.Client):
     staging_table = f'{config.PROJECT_ID}.{config.DATASET_STAGING_ID}.{table_name}'
@@ -67,3 +68,17 @@ def send_discord_message(content):
         "content": content  # Message content
     }
     response = requests.post(config.DISCORD_WEBHOOK, json=data)
+
+
+def clean_column(name):
+    name = unicodedata.normalize('NFD', name)
+    name = name.encode('ascii', 'ignore').decode('utf-8')
+    name = name.lower()
+
+    name = name.replace('/', '_')
+
+    name = re.sub(r'[^\w\s]', '', name)  
+    name = re.sub(r'\s+', '_', name)     
+    name = re.sub(r'[^a-z0-9_]', '', name) 
+    return name
+

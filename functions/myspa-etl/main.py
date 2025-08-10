@@ -3,7 +3,7 @@ from google.cloud import bigquery
 import pandas as pd
 from google.cloud import storage
 from io import BytesIO
-from modules.customer import etl_customer
+from elt import process_customer, process_order, process_level
 from helper.etl_helper import send_discord_message
 
 def main(event, context):
@@ -20,7 +20,13 @@ def main(event, context):
         # Customer
         if file_name.startswith('customer/') and file_name.endswith('.xlsx'):
             print(f"Processing file: {file_name}")
-            etl_customer(file_name, bucket, bq)
+            process_customer(file_name, bucket, bq)
+        elif file_name.startswith('order/') and file_name.endswith('.xlsx'):
+            print(f"Processing file: {file_name}")
+            process_order(file_name, bucket, bq)
+        elif file_name.startswith('level/') and file_name.endswith('.xlsx'):
+            print(f"Processing file: {file_name}")
+            process_level(file_name, bucket, bq)
         else:
             return "Skip"
         
