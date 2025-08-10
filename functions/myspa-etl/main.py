@@ -1,7 +1,13 @@
 from google.cloud import storage
 from google.cloud import bigquery
 from google.cloud import storage
-from elt import process_customer, process_order, process_level
+from elt import (
+    process_customer, 
+    process_order, 
+    process_level,
+    process_service,
+    process_product 
+)
 from helper.etl_helper import send_discord_message
 
 def main(event, context):
@@ -22,7 +28,14 @@ def main(event, context):
         elif file_name.startswith('level/') and file_name.endswith('.xlsx'):
             print(f"Processing file: {file_name}")
             process_level(file_name, bucket, bq)
+        elif file_name.startswith('service/') and file_name.endswith('.xlsx'):
+            print(f"Processing file: {file_name}")
+            process_service(file_name, bucket, bq)
+        elif file_name.startswith('product/') and file_name.endswith('.xlsx'):
+            print(f"Processing file: {file_name}")
+            process_product(file_name, bucket, bq)
         else:
+            print(f"Ignore file {file_name}")
             return "Skip"
         
         print("Success")

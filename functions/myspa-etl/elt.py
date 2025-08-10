@@ -121,3 +121,50 @@ def process_level(file_name, bucket, bq):
                     bigquery=bq
                     )
 
+def process_service(file_name, bucket, bq):
+
+    blob = bucket.blob(file_name)
+    data = blob.download_as_bytes()
+    df = pd.read_excel(BytesIO(data))
+
+    rename_column = {
+    'Mã dịch vụ': 'ma_dich_vu',
+    'Tên dịch vụ': 'ten_dich_vu',
+    'Nhóm dịch vụ': 'nhom_dich_vu',
+    }
+
+    df = df[[col for col in rename_column]]
+
+    df = df.rename(columns=rename_column)
+
+    df = df[df["ma_dich_vu"].notna() & (df["ma_dich_vu"].astype(str).str.strip() != "")]
+
+    upsert_bigquery(table_name='service', 
+                    identifier_cols=['ma_dich_vu'],
+                    dataframe=df,
+                    bigquery=bq
+                    )
+
+def process_product(file_name, bucket, bq):
+
+    blob = bucket.blob(file_name)
+    data = blob.download_as_bytes()
+    df = pd.read_excel(BytesIO(data))
+
+    rename_column = {
+    'Mã SP': 'ma_san_pham',
+    'Tên sản phẩm': 'ten_san_pham',
+    'Nhóm sản phẩm': 'nhom_san_pham',
+    }
+
+    df = df[[col for col in rename_column]]
+
+    df = df.rename(columns=rename_column)
+
+    df = df[df["ma_san_pham"].notna() & (df["ma_san_pham"].astype(str).str.strip() != "")]
+
+    upsert_bigquery(table_name='product', 
+                    identifier_cols=['ma_san_pham'],
+                    dataframe=df,
+                    bigquery=bq
+                    )
