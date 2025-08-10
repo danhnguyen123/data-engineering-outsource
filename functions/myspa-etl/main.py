@@ -1,8 +1,6 @@
 from google.cloud import storage
 from google.cloud import bigquery
-import pandas as pd
 from google.cloud import storage
-from io import BytesIO
 from elt import process_customer, process_order, process_level
 from helper.etl_helper import send_discord_message
 
@@ -11,13 +9,10 @@ def main(event, context):
     file_name = event['name']
 
     try:
-
-        # Tải file từ GCS
         gcs = storage.Client()
         bucket = gcs.bucket(bucket_name)
         bq = bigquery.Client()
 
-        # Customer
         if file_name.startswith('customer/') and file_name.endswith('.xlsx'):
             print(f"Processing file: {file_name}")
             process_customer(file_name, bucket, bq)

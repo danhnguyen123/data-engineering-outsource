@@ -1,7 +1,4 @@
 import os
-# import dotenv
-# import yaml
-# dotenv.load_dotenv('/opt/airflow/envs/.env')
 
 class AppConfig(object):
     """
