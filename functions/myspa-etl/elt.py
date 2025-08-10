@@ -39,7 +39,7 @@ def process_customer(file_name, bucket, bq):
 
     df = df.rename(columns=rename_column)
 
-    #### Load
+    df = df[df["ma_khach_hang"].notna() & (df["ma_khach_hang"].astype(str).str.strip() != "")]
 
     upsert_bigquery(table_name='customer', 
                     identifier_cols=['ma_khach_hang'],
@@ -81,6 +81,8 @@ def process_order(file_name, bucket, bq):
 
     df = df.rename(columns=rename_column)
 
+    df = df[df["ma_don_hang"].notna() & (df["ma_don_hang"].astype(str).str.strip() != "")]
+
     df["ngay_gio"] = pd.to_datetime(df["ngay_gio"], format="%d/%m/%Y %H:%M:%S")
 
     #### Load
@@ -111,7 +113,7 @@ def process_level(file_name, bucket, bq):
 
     df = df.rename(columns=rename_column)
 
-    #### Load
+    df = df[df["ma_khach_hang"].notna() & (df["ma_khach_hang"].astype(str).str.strip() != "")]
 
     upsert_bigquery(table_name='level', 
                     identifier_cols=['ma_khach_hang'],
