@@ -111,7 +111,7 @@ with DAG(
     catchup=False,
     tags=["daily", 'elt','pancake', 'bigquery'],
     params=contruct_params(),
-    dag_display_name="ETL Data from Pancake to BigQuery"
+    # dag_display_name="ETL Data from Pancake to BigQuery"
 ) as dag:
 
     start = EmptyOperator(task_id='start')

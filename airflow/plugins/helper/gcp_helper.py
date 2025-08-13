@@ -116,6 +116,63 @@ class BQHelper:
             self.logger.error(e)
             raise e
 
+
+    def upsert_bigquery(self, dataframe: pd.DataFrame, identifier_cols: list, table_name: str, dataset_id: str):
+        staging_table = f'{config.PROJECT_ID}.{config.DATASET_STAGING_ID}.{table_name}'
+        destination_table = f'{config.PROJECT_ID}.{dataset_id}.{table_name}'
+
+        # --- Load to staging table ---
+        try:
+            self.client.get_table(staging_table)
+        except Exception:
+            print(f"Staging table {staging_table} does not exist. It will be created.")
+
+        pandas_gbq.to_gbq(
+            dataframe=dataframe,
+            destination_table=staging_table,
+            project_id=config.PROJECT_ID,
+            if_exists="replace"
+        )
+
+        # --- If destination table doesn't exist, create it directly ---
+        try:
+            self.client.get_table(destination_table)
+            print(f"Destination table {destination_table} exists. Proceeding with MERGE.")
+        except Exception:
+            print(f"Destination table {destination_table} does not exist. Creating with full load.")
+            pandas_gbq.to_gbq(
+                dataframe=dataframe,
+                destination_table=destination_table,
+                project_id=config.PROJECT_ID,
+                if_exists="replace"
+            )
+            return "Success"
+
+        # --- Prepare merge SQL ---
+        on_clause = " AND ".join([f"target.{col} = source.{col}" for col in identifier_cols])
+        update_clause = ", ".join([f"target.{col} = source.{col}" for col in dataframe.columns if col not in identifier_cols])
+        insert_columns = ", ".join(dataframe.columns)
+        insert_values = ", ".join([f"source.{col}" for col in dataframe.columns])
+
+        merge_sql = f"""
+        MERGE `{destination_table}` AS target
+        USING `{staging_table}` AS source
+        ON {on_clause}
+        WHEN MATCHED THEN
+        UPDATE SET {update_clause}
+        WHEN NOT MATCHED THEN
+        INSERT ({insert_columns})
+        VALUES ({insert_values})
+        """
+
+        print("Executing MERGE query:")
+        print(merge_sql)
+
+        self.execute(merge_sql)
+        # query_job.result()  # Wait for the job to finish
+
+        return "Success"
+
     # def bq_upsert(self, update_data, table_name, db_schema, pk_array  =[], if_exists='append', project_id=config.PROJECT_ID, credentials_file = cf.GOOGLE_SA_UPLOAD):
     #     if update_data is None or update_data.shape[0] == 0:
     #         return False, "Empty DataFrame"

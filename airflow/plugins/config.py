@@ -2,6 +2,7 @@ import os
 import dotenv
 import yaml
 dotenv.load_dotenv('/opt/airflow/envs/.env')
+import envs.env as env
 
 class AppConfig(object):
     """
@@ -87,5 +88,8 @@ class AppConfig(object):
     DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK", "unknown")
 
     PANCAKE_TIMEOUT = 30
+
+    TTC_OUT_FACEBOOK_ID = env.ttc_out_facebook_sheet_id
+    TTC_SURVEY_ID = env.ttc_survey_sheet_id
 
 config = AppConfig()
