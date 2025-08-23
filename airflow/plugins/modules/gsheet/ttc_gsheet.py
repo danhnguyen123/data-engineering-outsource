@@ -72,7 +72,7 @@ def etl_ttc_survey():
     df["dau_thoi_gian"] = pd.to_datetime(df["dau_thoi_gian"], unit="d", origin="1899-12-30", errors="coerce").dt.round("s")
 
     bq.upsert_bigquery(dataframe=df,
-                    identifier_cols=['sdt'],
+                    identifier_cols=['sdt', 'dau_thoi_gian'],
                     table_name='ttc_survey', 
                     dataset_id='gsheet', 
                     )
