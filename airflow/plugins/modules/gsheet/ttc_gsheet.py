@@ -22,8 +22,8 @@ def etl_ttc_external_facebook():
     'Nguồn lead từ (*)': 'nguon_lead',
     'Nhóm dịch vụ quan tâm (*)': 'nhom_dich_vu_quan_tam',
     'Tên dịch vụ quan tâm (*)': 'ten_dich_vu_quan_tam',
-    'Lead type (*)': 'lead_type',
-    'Khách hàng status (*)': 'khach_hang_status',
+    'Phân loại lead (*)': 'lead_type',
+    'Trạng thái \nkhách hàng (*)': 'khach_hang_status',
     'Tình trạng tư vấn (*)': 'tinh_trang_tu_van',
     'Note': 'note',
     }
@@ -48,7 +48,7 @@ def etl_ttc_survey():
     df = gsheet.read_ws_range_rect(sheet_name="Tổng hợp", range="A2:M")
 
     rename_column = {
-        'No': 'no',
+        'No': 'stt',
         'Dấu thời gian': 'dau_thoi_gian',
         'Tên khách hàng': 'ten_khach_hang',
         'SĐT Quý khách': 'sdt',
