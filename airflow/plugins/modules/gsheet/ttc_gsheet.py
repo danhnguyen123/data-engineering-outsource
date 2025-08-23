@@ -18,7 +18,7 @@ def etl_ttc_external_facebook():
     'CSKH (*)': 'cskh',
     'Họ và tên KH (*)': 'ho_va_ten_kh',
     'SĐT (*)': 'sdt',
-    'Năm sinh (nếu có)': 'nam_sinh',
+    'Năm sinh \n(nếu có)': 'nam_sinh',
     'Nguồn lead từ (*)': 'nguon_lead',
     'Nhóm dịch vụ quan tâm (*)': 'nhom_dich_vu_quan_tam',
     'Tên dịch vụ quan tâm (*)': 'ten_dich_vu_quan_tam',
