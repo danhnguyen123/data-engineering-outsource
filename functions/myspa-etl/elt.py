@@ -11,27 +11,27 @@ def process_customer(file_name, bucket, bq):
 
     rename_column = {
     'Mã khách hàng': 'ma_khach_hang',
-    'Họ tên': 'ho_ten',
+    'Tên khách hàng': 'ho_ten',
     'Số điện thoại': 'so_dien_thoai',
     'Email': 'email',
     'Ngày sinh': 'ngay_sinh',
     'Giới tính': 'gioi_tinh',
-    'Địa chỉ': 'dia_chi',
-    'Phường/Xã': 'phuong_xa',
-    'Quận/Huyện': 'quan_huyen',
-    'Tỉnh thành': 'tinh_thanh',
-    'Nhóm KH': 'nhom_kh',
-    'Nguồn KH': 'nguon_kh',
+    # 'Địa chỉ': 'dia_chi',
+    # 'Phường/Xã': 'phuong_xa',
+    # 'Quận/Huyện': 'quan_huyen',
+    # 'Tỉnh thành': 'tinh_thanh',
+    'Nhóm khách hàng': 'nhom_kh',
+    'Nguồn khách hàng': 'nguon_kh',
     'Ngày tham gia': 'ngay_tham_gia',
-    'Dịch vụ đã sử dụng': 'dich_vu_da_su_dung',
-    'Ngày sử dụng dịch vụ': 'ngay_su_dung_dich_vu',
-    'Tổng tiền': 'tong_tien',
-    'Nghề nghiệp': 'nghe_nghiep',
-    'Mã giới thiệu': 'ma_gioi_thieu',
-    'NV liên hệ': 'nv_lien_he',
-    'NV phụ trách': 'nv_phu_trach',
-    'Dịch vụ quan tâm': 'dich_vu_quan_tam',
-    'Được tạo bởi': 'duoc_tao_boi',
+    # 'Dịch vụ đã sử dụng': 'dich_vu_da_su_dung',
+    # 'Ngày sử dụng dịch vụ': 'ngay_su_dung_dich_vu',
+    # 'Tổng tiền': 'tong_tien',
+    # 'Nghề nghiệp': 'nghe_nghiep',
+    # 'Mã giới thiệu': 'ma_gioi_thieu',
+    # 'NV liên hệ': 'nv_lien_he',
+    # 'NV phụ trách': 'nv_phu_trach',
+    # 'Dịch vụ quan tâm': 'dich_vu_quan_tam',
+    # 'Được tạo bởi': 'duoc_tao_boi',
     'Chi nhánh': 'chi_nhanh',
     }
 
@@ -83,12 +83,14 @@ def process_order(file_name, bucket, bq):
 
     df = df[df["ma_don_hang"].notna() & (df["ma_don_hang"].astype(str).str.strip() != "")]
 
+    df["ma_dv_sp"] = df["ma_dv_sp"].fillna("total")
+
     df["ngay_gio"] = pd.to_datetime(df["ngay_gio"], format="%d/%m/%Y %H:%M:%S")
 
     #### Load
 
     upsert_bigquery(table_name='order', 
-                    identifier_cols=['ma_don_hang'],
+                    identifier_cols=['ma_don_hang', 'ma_dv_sp'],
                     dataframe=df,
                     bigquery=bq
                     )
