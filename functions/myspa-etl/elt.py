@@ -13,7 +13,7 @@ def process_customer(file_name, bucket, bq):
     'Mã khách hàng': 'ma_khach_hang',
     'Tên khách hàng': 'ho_ten',
     'Số điện thoại': 'so_dien_thoai',
-    'Email': 'email',
+    # 'Email': 'email',
     'Ngày sinh': 'ngay_sinh',
     'Giới tính': 'gioi_tinh',
     # 'Địa chỉ': 'dia_chi',
@@ -32,7 +32,7 @@ def process_customer(file_name, bucket, bq):
     # 'NV phụ trách': 'nv_phu_trach',
     # 'Dịch vụ quan tâm': 'dich_vu_quan_tam',
     # 'Được tạo bởi': 'duoc_tao_boi',
-    'Chi nhánh': 'chi_nhanh',
+    # 'Chi nhánh': 'chi_nhanh',
     }
 
     df = df[[col for col in rename_column]]
