@@ -87,6 +87,8 @@ def process_order(file_name, bucket, bq):
 
     df["ngay_gio"] = pd.to_datetime(df["ngay_gio"], format="%d/%m/%Y %H:%M:%S")
 
+    df = df.drop_duplicates(subset=['ma_don_hang', 'ma_dv_sp'])
+
     #### Load
 
     upsert_bigquery(table_name='order', 
