@@ -6,6 +6,7 @@ from google.cloud import bigquery
 import requests
 import re, unicodedata
 import pytz
+from datetime import datetime
 
 tz = pytz.timezone("Asia/Bangkok")
 

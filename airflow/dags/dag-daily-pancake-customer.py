@@ -138,7 +138,7 @@ with DAG(
                                     "table_name": table,
                                     "task_name": "extract",
                                     "vars": {
-                                        "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                                        "start_date": TimeHelper.get_start_delta_date_format(delta=7),
                                         "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1),
                                         "page": page
                                     }
@@ -154,7 +154,7 @@ with DAG(
                             "table_name": table,
                             "task_name": "load",
                             "vars": {
-                                "start_date": TimeHelper.get_start_delta_date_format(delta=1),
+                                "start_date": TimeHelper.get_start_delta_date_format(delta=7),
                                 "end_date": TimeHelper.get_end_delta_date_format(delta=1, step=1)                      
                             }
                         }
