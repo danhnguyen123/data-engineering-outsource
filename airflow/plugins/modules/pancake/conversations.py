@@ -138,6 +138,7 @@ class ConversationsETL:
         df["platform"] = self.platform
         df["page_name"] = self.page_name
         df["link"] = f"{self.pancake_url}?c_id=" + df["id"]
+        df["ingested_at"] = TimeHelper.get_datetime_local()
 
         df = df.rename(columns={'from': 'customers'})
 

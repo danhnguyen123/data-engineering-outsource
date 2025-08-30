@@ -9,6 +9,10 @@ tz = pytz.timezone("Asia/Bangkok")
 def get_now_iso_date():
     return datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
+def get_datetime_local():
+    current_time = datetime.now(tz).replace(microsecond=0).replace(tzinfo=None)
+    return current_time
+
 def format_iso_date(date_time: datetime):
     """
     Converts a date string in format like "2024-06-02" at 00:00:00 in UTC+7 to iso date

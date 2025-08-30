@@ -108,6 +108,7 @@ class PageCustomerETL:
         df['updated_at'] = pd.to_datetime(df['updated_at'], errors='coerce').dt.floor('S')        
         df["platform"] = platform
         df["page_name"] = page_name
+        df["ingested_at"] = TimeHelper.get_datetime_local()
 
         # Config for load process
         self.table_cols = list(df.columns)

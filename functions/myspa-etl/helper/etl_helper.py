@@ -5,6 +5,13 @@ from config import config
 from google.cloud import bigquery
 import requests
 import re, unicodedata
+import pytz
+
+tz = pytz.timezone("Asia/Bangkok")
+
+def get_datetime_local():
+    current_time = datetime.now(tz).replace(microsecond=0).replace(tzinfo=None)
+    return current_time
 
 def upsert_bigquery(table_name: str, identifier_cols: list, dataframe: pd.DataFrame, bigquery: bigquery.Client):
     staging_table = f'{config.PROJECT_ID}.{config.DATASET_STAGING_ID}.{table_name}'

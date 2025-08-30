@@ -149,10 +149,9 @@ class MessagesETL:
         # self.logger.debug(f"Columns of df 2: {df.columns.tolist()}")
 
         df["from"] = df["from"].apply(lambda x: {"id": x.get("admin_id", x.get("id")), "name": x.get("admin_name", x.get("name")), "admin": True if x.get("admin_id") else False} if isinstance(x, dict) else None)
-
         df['inserted_at'] = pd.to_datetime(df['inserted_at'], errors='coerce').dt.floor('S')
-
         df["attachments"] = df["from"].apply(lambda x: True if x else False)
+        df["ingested_at"] = TimeHelper.get_datetime_local()
 
         df = df.rename(columns={'from': 'sender'})
 

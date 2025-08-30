@@ -2,6 +2,7 @@
 import pandas as pd
 from helper.gsheet_helper import GSheetHelper
 from helper.gcp_helper import BQHelper
+import helper.time_helper as TimeHelper  
 from plugins.helper.logging_helper import LoggingHelper
 from config import config
 
@@ -35,6 +36,7 @@ def etl_ttc_external_facebook():
     df = df[df["sdt"].notna() & (df["sdt"].astype(str).str.strip() != "")]
 
     df["ngay_input"] = pd.to_datetime(df["ngay_input"], format="%d/%m/%Y").dt.round("s")
+    df["ingested_at"] = TimeHelper.get_datetime_local()
 
     bq.upsert_bigquery(dataframe=df,
                     identifier_cols=['sdt'],
@@ -70,6 +72,7 @@ def etl_ttc_survey():
     df = df[df["sdt"].notna() & (df["sdt"].astype(str).str.strip() != "")]
     df["sdt"] = df["sdt"].astype(str)
     df["dau_thoi_gian"] = pd.to_datetime(df["dau_thoi_gian"], unit="d", origin="1899-12-30", errors="coerce").dt.round("s")
+    df["ingested_at"] = TimeHelper.get_datetime_local()
 
     bq.upsert_bigquery(dataframe=df,
                     identifier_cols=['sdt', 'dau_thoi_gian'],

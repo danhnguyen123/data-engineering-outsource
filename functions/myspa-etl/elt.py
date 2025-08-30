@@ -1,7 +1,7 @@
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
-from helper.etl_helper import upsert_bigquery
+from helper.etl_helper import upsert_bigquery, get_datetime_local
 
 def process_customer(file_name, bucket, bq):
 
@@ -40,6 +40,8 @@ def process_customer(file_name, bucket, bq):
     df = df.rename(columns=rename_column)
 
     df = df[df["ma_khach_hang"].notna() & (df["ma_khach_hang"].astype(str).str.strip() != "")]
+
+    df["ingested_at"] = get_datetime_local()
 
     upsert_bigquery(table_name='customer', 
                     identifier_cols=['ma_khach_hang'],
@@ -87,6 +89,8 @@ def process_order(file_name, bucket, bq):
 
     df["ngay_gio"] = pd.to_datetime(df["ngay_gio"], format="%d/%m/%Y %H:%M:%S")
 
+    df["ingested_at"] = get_datetime_local()
+
     df = df.drop_duplicates(subset=['ma_don_hang', 'ma_dv_sp'])
 
     #### Load
@@ -119,6 +123,8 @@ def process_level(file_name, bucket, bq):
 
     df = df[df["ma_khach_hang"].notna() & (df["ma_khach_hang"].astype(str).str.strip() != "")]
 
+    df["ingested_at"] = get_datetime_local()
+
     upsert_bigquery(table_name='level', 
                     identifier_cols=['ma_khach_hang'],
                     dataframe=df,
@@ -143,6 +149,8 @@ def process_service(file_name, bucket, bq):
 
     df = df[df["ma_dich_vu"].notna() & (df["ma_dich_vu"].astype(str).str.strip() != "")]
 
+    df["ingested_at"] = get_datetime_local()
+
     upsert_bigquery(table_name='service', 
                     identifier_cols=['ma_dich_vu'],
                     dataframe=df,
@@ -166,6 +174,8 @@ def process_product(file_name, bucket, bq):
     df = df.rename(columns=rename_column)
 
     df = df[df["ma_san_pham"].notna() & (df["ma_san_pham"].astype(str).str.strip() != "")]
+
+    df["ingested_at"] = get_datetime_local()
 
     upsert_bigquery(table_name='product', 
                     identifier_cols=['ma_san_pham'],
