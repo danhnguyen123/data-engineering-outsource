@@ -205,6 +205,8 @@ def process_revenue(file_name, bucket, bq):
 
     df = df[df["ma_thanh_toan"].notna() & (df["ma_thanh_toan"].astype(str).str.strip() != "")]
 
+    df["ngay_gio"] = pd.to_datetime(df["ngay_gio"], format="%d/%m/%Y %H:%M:%S")
+
     df["ingested_at"] = get_datetime_local()
 
     upsert_bigquery(table_name='revenue', 
