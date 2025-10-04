@@ -182,3 +182,33 @@ def process_product(file_name, bucket, bq):
                     dataframe=df,
                     bigquery=bq
                     )
+
+def process_revenue(file_name, bucket, bq):
+
+    blob = bucket.blob(file_name)
+    data = blob.download_as_bytes()
+    df = pd.read_excel(BytesIO(data))
+
+    rename_column = {
+    'Mã thanh toán': 'ma_thanh_toan',
+    'Mã đơn hàng': 'ma_don_hang',
+    'Họ tên': 'ho_ten',
+    'Số điện thoại': 'so_dien_thoai',
+    'Mã khách hàng': 'ma_khach_hang',
+    'Ngày giờ': 'ngay_gio',
+    'Số tiền thanh toán': 'so_tien_thanh_toan',
+    }
+
+    df = df[[col for col in rename_column]]
+
+    df = df.rename(columns=rename_column)
+
+    df = df[df["ma_thanh_toan"].notna() & (df["ma_thanh_toan"].astype(str).str.strip() != "")]
+
+    df["ingested_at"] = get_datetime_local()
+
+    upsert_bigquery(table_name='revenue', 
+                    identifier_cols=['ma_thanh_toan'],
+                    dataframe=df,
+                    bigquery=bq
+                    )
