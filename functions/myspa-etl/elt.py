@@ -7,7 +7,7 @@ def process_customer(file_name, bucket, bq):
 
     blob = bucket.blob(file_name)
     data = blob.download_as_bytes()
-    df = pd.read_excel(BytesIO(data))
+    df = pd.read_excel(BytesIO(data), dtype=str)
 
     rename_column = {
     'Mã khách hàng': 'ma_khach_hang',
