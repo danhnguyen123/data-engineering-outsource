@@ -128,6 +128,8 @@ class PageCustomerETL:
             return "Success"
         
         identifier_cols = ['id']
+
+        group_identifier_cols = ", ".join(identifier_cols)
         
         table_cols = self.table_cols if self.table_cols else self.bq.get_columns(dataset_id=self.dataset_staging_id, table_id=self.table_name)
         
@@ -138,7 +140,12 @@ class PageCustomerETL:
 
         merge_query = f"""
         MERGE `{self.project_id}.{self.dataset_id}.{self.table_name}` AS target
-        USING `{self.project_id}.{self.dataset_staging_id}.{self.table_name}` AS source
+        USING (
+            SELECT *
+            FROM `{self.project_id}.{self.dataset_staging_id}.{self.table_name}`
+            WHERE 1=1
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY {group_identifier_cols} ORDER BY ingested_at DESC) = 1
+        ) AS source
         ON {on_clause}
         WHEN MATCHED THEN
             UPDATE SET {update_set_clause}
