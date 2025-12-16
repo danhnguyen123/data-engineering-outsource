@@ -54,3 +54,13 @@ def get_end_datetime_of_date(date):
 def get_unix_timestamp(datetime: datetime):
     return int(datetime.timestamp())
 
+def utc7_str_to_unix(timestamp_str: str) -> int:
+    """
+    Convert datetime string (UTC+7) to Unix timestamp (seconds)
+
+    Input format: YYYY-MM-DDTHH:MM:SS.microseconds
+    Example: "2025-10-18T07:17:37.000000"
+    """
+    dt = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%f")
+    dt = dt.replace(tzinfo=timezone(timedelta(hours=7)))
+    return int(dt.timestamp())
