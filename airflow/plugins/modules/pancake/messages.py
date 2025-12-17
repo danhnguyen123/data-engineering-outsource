@@ -8,7 +8,7 @@ from logging import Logger
 from helper.gcp_helper import BQHelper
 from helper.redis_helper import RedisHelper
 import helper.time_helper as TimeHelper  
-from helper.etl_helper import encode_string_to_short_number
+from helper.etl_helper import id128_hex
 from config import config
 from helper.pancake_helper import PancakeHelper
 
@@ -155,7 +155,7 @@ class MessagesETL:
 
         df = df[available_columns]
 
-        df['id'] = df['id'].apply(encode_string_to_short_number)
+        df['id'] = df['id'].apply(id128_hex)
 
         # self.logger.debug(f"Columns of df 2: {df.columns.tolist()}")
 
