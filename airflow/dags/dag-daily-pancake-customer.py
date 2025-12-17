@@ -25,11 +25,13 @@ from plugins.helper.pancake_helper import PancakeHelper
 from plugins.modules.pancake.page_customer import PageCustomerETL
 from plugins.modules.pancake.conversations import ConversationsETL
 from plugins.modules.pancake.messages import MessagesETL
+from plugins.modules.pancake.users import UsersETL
 
 PANCAKE_NAMESPACE = 'pancake'
 CUSTOMERS = 'customers'
 CONVERSATIONS = 'conversations'
 MESSAGES = 'messages'
+USERS = 'users'
 
 local_tz = pendulum.timezone(config.DWH_TIMEZONE)
 
@@ -42,10 +44,11 @@ pancake = PancakeHelper(logger=logger)
 mapping_etl = {
     CUSTOMERS: PageCustomerETL,
     CONVERSATIONS: ConversationsETL,
-    MESSAGES: MessagesETL
+    MESSAGES: MessagesETL,
+    USERS: UsersETL
 }
 
-UPSTREAM_TABLES_LIST = [CUSTOMERS, CONVERSATIONS]
+UPSTREAM_TABLES_LIST = [CUSTOMERS, CONVERSATIONS, USERS]
 
 DOWNSTREAM_TABLES_LIST = [MESSAGES]
 

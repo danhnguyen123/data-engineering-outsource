@@ -122,3 +122,30 @@ class PancakeHelper:
             
         except Exception as e:
             raise e
+        
+    def get_users(self, page_access_token, page_id):
+        '''
+        https://developer.pancake.biz/#/paths/pages-page_id--users/get
+        '''
+
+        url = f"https://pages.fm/api/public_api/v1/pages/{page_id}/users"
+        params = {
+            "page_access_token": page_access_token,
+        }
+
+        try:
+            response = self.session.get(url=url, params=params, timeout=config.PANCAKE_TIMEOUT)
+            response_json = response.json()
+
+            if response.status_code == 200:
+                # messages = response_json.get("messages")
+                # del response_json["messages"]
+                return response_json
+
+            else:
+                message = f"Error when getting list users from Pancake, status_code: {response.status_code}, error: {response.text}"
+                self.logger.error(message)
+                raise HTTPError(message)
+            
+        except Exception as e:
+            raise e
