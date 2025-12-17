@@ -108,7 +108,7 @@ class UsersETL:
 
         df = df[available_columns]
    
-        df["platform"] = platform
+        df["page_id"] = page_id
         df["page_name"] = page_name
         df["ingested_at"] = TimeHelper.get_datetime_local()
 
@@ -129,7 +129,7 @@ class UsersETL:
             self.logger.debug("Skip load job !")
             return "Success"
         
-        identifier_cols = ['id']
+        identifier_cols = ['id', 'page_id']
 
         group_identifier_cols = ", ".join(identifier_cols)
         
