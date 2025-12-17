@@ -189,6 +189,10 @@ class MessagesETL:
             SELECT *
             FROM `{self.project_id}.{self.dataset_staging_id}.{self.table_name}`
             WHERE 1=1
+            AND sender.id NOT IN (
+                SELECT exclude_id
+                FROM `data-analytics-service.pancake.vw_exclude_admin`
+                )
             QUALIFY ROW_NUMBER() OVER (PARTITION BY {group_identifier_cols} ORDER BY ingested_at DESC) = 1
         ) AS source
         ON {on_clause}
