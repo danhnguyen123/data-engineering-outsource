@@ -62,6 +62,8 @@ class PageCustomerETL:
 
         df = pd.DataFrame()
 
+        customer_rows = [] 
+
         while True:
             self.logger.debug(f"Get data {self.table_name} from Pancake | page {page}")
             
@@ -76,15 +78,16 @@ class PageCustomerETL:
             if not results:
                 break
 
-            df = pd.concat([df, pd.DataFrame(results)], ignore_index=True)
+            customer_rows.extend(results)
             page += 1
             
             time.sleep(0.5)
 
-        if df.empty:
+        if not customer_rows:
             self.logger.debug(f"The DataFrame has no data rows. Skip")
             return "Success"
         
+        df = pd.DataFrame.from_records(customer_rows)
         self.logger.debug(f"The DataFrame has {len(df)} rows.")
 
         expected_columns = [

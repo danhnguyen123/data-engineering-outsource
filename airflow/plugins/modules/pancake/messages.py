@@ -68,15 +68,13 @@ class MessagesETL:
             self.logger.debug("No input conversation. Skip extract job !")
             return "Success"    
 
-        df = pd.DataFrame()
-        # df_conversation_report = pd.DataFrame()
+        all_conversations_rows = []
 
         for conversation_id in conversation_list:
 
-            df_conversation = pd.DataFrame()
+            conv_rows = []
             page = 1
             current_count = None
-            filter_previous_commented = None
 
             while True:
                 self.logger.debug(f"Get data {self.table_name} from Pancake | page {page} | conversation {conversation_id} | current_count {(current_count or 0)}")
@@ -91,31 +89,17 @@ class MessagesETL:
                 if not messages:
                     break
 
-                # if page == 1:
-                #     filter_previous_commented = (pd.to_datetime(messages[0].get("inserted_at")) - timedelta(days=3)).replace(hour=0, minute=0, second=0, microsecond=0)
-
-                    # if conversation_report:
-                    #     df_conversation_report = pd.concat([df_conversation_report, pd.DataFrame(conversation_report)], ignore_index=True)
-
                 filtered_messages = []
 
                 for message in messages:
                     unix_timestamp_message = TimeHelper.utc7_str_to_unix(message.get("inserted_at"))
-                    if self.start_datetime <= unix_timestamp_message <= self.end_datetime:
+                    if unix_timestamp_message >= self.start_datetime:
                         filtered_messages.append(message)
 
                 if not filtered_messages:
                     break
 
-                df_conversation = pd.concat([df_conversation, pd.DataFrame(filtered_messages)], ignore_index=True)
-
-                # last_commented_at = pd.to_datetime(messages[-1].get("inserted_at"))
-
-                # print(f"last_commented_at: {last_commented_at}")
-                # print(f"filter_previous_commented: {filter_previous_commented}")
-
-                # if last_commented_at < filter_previous_commented:
-                #     break
+                conv_rows.extend(filtered_messages)   
 
                 current_count = (current_count or 0) + len(messages)
                 page += 1
@@ -123,9 +107,12 @@ class MessagesETL:
                 time.sleep(0.5)
 
             # Filter message
-            # df_conversation = df_conversation[df_conversation['inserted_at'].apply(lambda x: pd.to_datetime(x) >= filter_previous_commented)]
-            df_conversation = df_conversation[df_conversation['from'].apply(lambda x: not bool(x.get("admin_id")))]
-            df = pd.concat([df, df_conversation], ignore_index=True)
+            if conv_rows:
+                df_conversation = pd.DataFrame.from_records(conv_rows)
+                df_conversation = df_conversation[df_conversation['from'].apply(lambda x: not bool(x.get("admin_id")))]
+                all_conversations_rows.append(df_conversation)
+
+        df = pd.concat(all_conversations_rows, ignore_index=True) if all_conversations_rows else pd.DataFrame()
 
         if df.empty:
             self.logger.debug(f"The DataFrame has no data rows. Skip")

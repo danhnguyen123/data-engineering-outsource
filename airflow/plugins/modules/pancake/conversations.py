@@ -63,7 +63,7 @@ class ConversationsETL:
 
         page = 1
 
-        df = pd.DataFrame()
+        conv_rows = [] 
 
         last_conversation_id = None
 
@@ -82,16 +82,17 @@ class ConversationsETL:
                 self.logger.debug(f"Emtry Result: {results}")
                 break
         
-            df = pd.concat([df, pd.DataFrame(results)], ignore_index=True)
+            conv_rows.extend(results)
             last_conversation_id = results[-1].get("id")
             page += 1
 
             time.sleep(0.5)
 
-        if df.empty:
+        if not conv_rows:
             self.logger.debug(f"The DataFrame has no data rows. Skip")
             return "Success"
         
+        df = pd.DataFrame.from_records(conv_rows)
         self.logger.debug(f"The DataFrame has {len(df)} rows.")
 
         # Transform
