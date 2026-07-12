@@ -10,6 +10,14 @@ RUN apt-get update \
 
 RUN apt-get update && apt-get install -y
 
+# Install Node.js + HubSpot CLI (used to obtain a short-lived Hubspot access token)
+RUN apt-get update \
+    && apt-get install -y curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g @hubspot/cli \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 USER airflow
 
 # Required for airflow 

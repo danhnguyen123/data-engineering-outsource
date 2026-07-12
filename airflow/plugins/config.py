@@ -72,6 +72,26 @@ class AppConfig(object):
     AMIS_WEB_COLLECTION = "amis_config"
     AMIS_WEB_PAGE_LIMIT = 20
 
+    HUBSPOT_APP_TOKEN = os.getenv("HUBSPOT_APP_TOKEN", "unknown")
+    # HubSpot CLI (personal access key) auth: the CLI exchanges this long-lived key
+    # for a short-lived access token stored in HUBSPOT_CLI_CONFIG_PATH (~/.hscli/config.yml)
+    HUBSPOT_PERSONAL_ACCESS_KEY = os.getenv("HUBSPOT_PERSONAL_ACCESS_KEY", "unknown")
+    HUBSPOT_CLI_CONFIG_PATH = os.getenv("HUBSPOT_CLI_CONFIG_PATH", "/home/airflow/.hscli/config.yml")
+    HUBSPOT_ACCESS_TOKEN_REDIS = "HUBSPOT_ACCESS_TOKEN_REDIS"
+    HUBSPOT_TOKEN_TTL_MARGIN = 60  # seconds subtracted from expiresAt when caching
+    HUBSPOT_PAGE_SIZE = 100
+    HUBSPOT_BASE_URL = os.getenv("HUBSPOT_BASE_URL","https://api.hubapi.com")
+    PREFIX_HUBSPOT_BUCKET = "hub_spot"
+    HUBSPOT_ACCOUNT_ID = 1774127
+    HUBSPOT_API_TIMEOUT = 300
+
+    DAHAHI_BASE_URL = os.getenv("DAHAHI_BASE_URL", "https://sapp.dahahi.vn")
+    DAHAHI_APP_KEY = os.getenv("DAHAHI_APP_KEY", "unknown")
+    DAHAHI_SECRET_KEY = os.getenv("DAHAHI_SECRET_KEY", "unknown")
+    DAHAHI_API_TIMEOUT = 300
+    DAHAHI_PAGE_SIZE = 100
+    PREFIX_DAHAHI_BUCKET = "dahahi"
+
     DWH_TIMEZONE = 'Asia/Ho_Chi_Minh'
     DWH_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 

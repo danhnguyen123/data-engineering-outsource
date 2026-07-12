@@ -9,3 +9,11 @@ from plugins.modules.pancake.page_customer import PageCustomerETL
 from plugins.modules.pancake.conversations import ConversationsETL
 from plugins.modules.pancake.messages import MessagesETL
 from plugins.modules.pancake.users import UsersETL
+
+from plugins.modules.hubspot.contacts import HubspotContactsETL
+from plugins.modules.hubspot.deals import HubspotDealsETL
+from plugins.modules.hubspot.tickets import HubspotTicketsETL
+from plugins.modules.hubspot.feedback_submissions import HubspotFeedbacksETL
+
+from plugins.modules.dahahi.checkin import DahahiCheckinETL
+from plugins.modules.dahahi.employees import DahahiEmployeesETL

@@ -1,5 +1,5 @@
 import json
-from google.oauth2 import service_account
+import google.auth
 from google.cloud import bigquery
 from google.cloud import storage
 import pandas as pd
@@ -16,8 +16,13 @@ class GCSHelper:
         self.logger = logger
         self.bucket_name = bucket_name
         if not self.client:
-            self.credentials = service_account.Credentials.from_service_account_file(credentials_file or config.SERVICE_ACCOUNT)
-            self.client = storage.Client(credentials=self.credentials)
+            # load_credentials_from_file supports both a SA key JSON and a
+            # Workload Identity Federation (external_account) config file.
+            self.credentials, project_id = google.auth.load_credentials_from_file(
+                credentials_file or config.SERVICE_ACCOUNT,
+                scopes=["https://www.googleapis.com/auth/cloud-platform"],
+            )
+            self.client = storage.Client(credentials=self.credentials, project=project_id or config.PROJECT_ID)
             self.bucket = self.client.get_bucket(self.bucket_name)
 
     def upload_json(self, json_string, file_name):
@@ -55,12 +60,16 @@ class BQHelper:
 
         self.client = client
         self.logger = logger
+        self.project_id = config.PROJECT_ID
         if not self.client:
-            self.credentials = service_account.Credentials.from_service_account_file(
-                credentials_file or config.SERVICE_ACCOUNT, 
+            # load_credentials_from_file supports both a SA key JSON and a
+            # Workload Identity Federation (external_account) config file.
+            self.credentials, project_id = google.auth.load_credentials_from_file(
+                credentials_file or config.SERVICE_ACCOUNT,
                 scopes=["https://www.googleapis.com/auth/cloud-platform"],
                 )
-            self.client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
+            self.project_id = project_id or config.PROJECT_ID
+            self.client = bigquery.Client(credentials=self.credentials, project=self.project_id)
 
 
     def get_table(self, table_id='project-id.dataset-id.table-id'):
@@ -88,7 +97,7 @@ class BQHelper:
 
     def select(self, query):
         try:
-            data_frame = pandas_gbq.read_gbq(query,credentials=self.credentials,progress_bar_type=None)
+            data_frame = pandas_gbq.read_gbq(query,project_id=self.project_id,credentials=self.credentials,progress_bar_type=None)
         except Exception as e:
             self.logger.debug(e)
             return False
@@ -111,7 +120,7 @@ class BQHelper:
                         update_data[c] = update_data[c].dt.strftime(config.DWH_TIME_FORMAT)
                         update_data[c] = pd.to_datetime(update_data[c],errors='coerce',format="%Y-%m-%d %H:%M:%S")
 
-            pandas_gbq.to_gbq(update_data, destination_table=table_id,chunksize=50000,if_exists=if_exists,credentials=self.credentials, api_method=load_method)
+            pandas_gbq.to_gbq(update_data, destination_table=table_id,project_id=project_id,chunksize=50000,if_exists=if_exists,credentials=self.credentials, api_method=load_method)
         except Exception as e:
             self.logger.error(e)
             raise e
