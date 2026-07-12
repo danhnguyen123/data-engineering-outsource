@@ -77,6 +77,7 @@ class AppConfig(object):
     # for a short-lived access token stored in HUBSPOT_CLI_CONFIG_PATH (~/.hscli/config.yml)
     HUBSPOT_PERSONAL_ACCESS_KEY = os.getenv("HUBSPOT_PERSONAL_ACCESS_KEY", "unknown")
     HUBSPOT_CLI_CONFIG_PATH = os.getenv("HUBSPOT_CLI_CONFIG_PATH", "/home/airflow/.hscli/config.yml")
+    HUBSPOT_CLI_ACCOUNT = os.getenv("HUBSPOT_CLI_ACCOUNT", "sapp-edu")  # --account name for `hs account auth`
     HUBSPOT_ACCESS_TOKEN_REDIS = "HUBSPOT_ACCESS_TOKEN_REDIS"
     HUBSPOT_TOKEN_TTL_MARGIN = 60  # seconds subtracted from expiresAt when caching
     HUBSPOT_PAGE_SIZE = 100

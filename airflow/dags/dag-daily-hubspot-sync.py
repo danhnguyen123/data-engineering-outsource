@@ -69,12 +69,20 @@ def refresh_hubspot_token(**kwargs):
     read it from the CLI config file and cache it straight into Redis with a TTL derived
     from expiresAt. The token is never printed to stdout / pushed to XCom.
     """
-    subprocess.run(
-        ["hs", "account", "auth", "--personal-access-key", config.HUBSPOT_PERSONAL_ACCESS_KEY],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=True,
+    # --account is required so the CLI doesn't prompt interactively for an account name
+    result = subprocess.run(
+        ["hs", "account", "auth",
+         "--account", config.HUBSPOT_CLI_ACCOUNT,
+         "--personal-access-key", config.HUBSPOT_PERSONAL_ACCESS_KEY],
+        capture_output=True,
+        text=True,
     )
+    if result.returncode != 0:
+        # surface the real CLI error (never contains the key itself, only messages)
+        raise RuntimeError(
+            f"`hs account auth` failed (exit {result.returncode}): "
+            f"{result.stderr.strip() or result.stdout.strip()}"
+        )
 
     with open(config.HUBSPOT_CLI_CONFIG_PATH) as f:
         cfg = yaml.safe_load(f)
