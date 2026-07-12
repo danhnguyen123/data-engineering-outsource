@@ -21,6 +21,11 @@ up:
 	@cd ./airflow && docker compose up -d --build && cd ..
 	@echo "Spin up Airflow complete"
 
+up-no-build:
+	@echo "Spin up Airflow"
+	@cd ./airflow && docker compose up -d && cd ..
+	@echo "Spin up Airflow complete"
+
 mongodb:
 	@echo "Setup mongodb"
 	@cd ./mongodb && docker compose -f docker-compose.yaml up -d --build && cd ..
@@ -43,4 +48,6 @@ down:
 
 deploy: init depend up
 
-restart: down up
+reboot: down up
+
+restart: down up-no-build
