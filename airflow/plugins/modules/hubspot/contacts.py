@@ -1,7 +1,9 @@
 from typing import Dict, List, Optional, Type
 import json
+import re
 import pandas as pd
 from airflow.utils.context import Context
+from google.api_core.exceptions import NotFound
 from helper.hubspot_helper import HubspotHelper
 from logging import Logger
 from helper.gcp_helper import BQHelper
@@ -30,6 +32,12 @@ class HubspotContactsETL:
         self.kwargs = kwargs
 
         self.dataset_staging_id = config.DATASET_STAGING_ID
+
+        # Per-run temporary table (created fresh on extract, auto-expiring) — no persistent staging table.
+        # extract & load are separate tasks, so the name is derived from run_id so both agree.
+        run_suffix = re.sub(r'[^0-9a-zA-Z]+', '_', str(self.kwargs['dag_run'].run_id)).strip('_')
+        self.temp_table_name = f"{self.table_name}__tmp_{run_suffix}"
+        self.temp_table_id = f"{self.project_id}.{self.dataset_staging_id}.{self.temp_table_name}"
 
         conf = self.kwargs['dag_run'].conf
         self.start_date = conf.get('start_date')
@@ -147,15 +155,23 @@ class HubspotContactsETL:
         df["lifecycle_stage"] = df["properties"].map(lambda x: x.get("lifecyclestage"))
         df["created_datetime"] = df["createdAt"].map(lambda x: time_helper.convert_to_local_datetime_string(x))
         df["updated_datetime"] = df["properties"].map(lambda x: time_helper.convert_to_local_datetime_string(x.get("lastmodifieddate")))
+        df["ingested_at"] = time_helper.get_datetime_local()
 
-        df = df[["id", "hubspot_link", "full_name", "email", "phone", "date_of_birth", "school", "major", "company_type", "position", "level", "study_area", "area", "lifecycle_stage", "created_datetime", "updated_datetime"]]
+        df = df[["id", "hubspot_link", "full_name", "email", "phone", "date_of_birth", "school", "major", "company_type", "position", "level", "study_area", "area", "lifecycle_stage", "created_datetime", "updated_datetime", "ingested_at"]]
 
-        self.logger.debug("Truncate staging table...")
-        truncate_result = self.bq.execute(f"truncate table `{self.project_id}.{self.dataset_staging_id}.{self.table_name}`")
-        self.logger.debug(f"Truncate staging table, result {truncate_result}")
-
-        self.logger.debug(f"The DataFrame has {len(df)} rows.")
-        self.bq.bq_append(update_data=df, table_name=self.table_name, dataset_id=self.dataset_staging_id)
+        self.logger.debug(f"The DataFrame has {len(df)} rows. Load into temp table {self.temp_table_id}")
+        # Load into a per-run temp table (created fresh, replaces any leftover) - no persistent staging table
+        self.bq.bq_append(
+            update_data=df,
+            table_name=self.temp_table_name,
+            dataset_id=self.dataset_staging_id,
+            if_exists='replace',
+        )
+        # Safety net: auto-expire the temp table so it is cleaned up even if the load task never runs
+        self.bq.execute(
+            f"ALTER TABLE `{self.temp_table_id}` "
+            "SET OPTIONS (expiration_timestamp = TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY))"
+        )
 
         return "Success"
 
@@ -167,68 +183,41 @@ class HubspotContactsETL:
             self.logger.debug("Skip load job !")
             return "Success"
 
-        merge_query = f'''
-        merge `{self.project_id}.{self.dataset_id}.{self.table_name}` t
-        using `{self.project_id}.{self.dataset_staging_id}.{self.table_name}` s
-        on t.id = s.id
-        when matched then
-        update set
-            t.full_name = s.full_name,
-            t.email = s.email,
-            t.phone = s.phone,
-            t.date_of_birth = s.date_of_birth,
-            t.school = s.school,
-            t.major = s.major,
-            t.company_type = s.company_type,
-            t.position = s.position,
-            t.level = s.level,
-            t.study_area = s.study_area,
-            t.area = s.area,
-            t.lifecycle_stage = s.lifecycle_stage,
-            t.updated_datetime = s.updated_datetime
-        when not matched then
-        insert (
-            id,
-            hubspot_link,
-            full_name,
-            email,
-            phone,
-            date_of_birth,
-            school,
-            major,
-            company_type,
-            position,
-            level,
-            study_area,
-            area,
-            lifecycle_stage,
-            created_datetime,
-            updated_datetime
-            )
-        values (
-            id,
-            hubspot_link,
-            full_name,
-            email,
-            phone,
-            date_of_birth,
-            school,
-            major,
-            company_type,
-            position,
-            level,
-            study_area,
-            area,
-            lifecycle_stage,
-            created_datetime,
-            updated_datetime
-        )
-        '''
+        # extract may have produced no data -> no temp table to merge
+        try:
+            self.bq.client.get_table(self.temp_table_id)
+        except NotFound:
+            self.logger.debug(f"Temp table {self.temp_table_id} not found (no data extracted). Skip load !")
+            return "Success"
+
+        # Build the MERGE dynamically from the temp table columns (same approach as ConversationsETL),
+        # keeping the latest row per id via QUALIFY on ingested_at.
+        identifier_cols = ['id']
+        table_cols = self.bq.get_columns(dataset_id=self.dataset_staging_id, table_id=self.temp_table_name)
+
+        partition_cols = ", ".join(identifier_cols)
+        on_clause = " and ".join([f"target.{col} = source.{col}" for col in identifier_cols])
+        update_set_clause = ", ".join([f"target.{col} = source.{col}" for col in table_cols if col not in identifier_cols])
+        insert_cols_clause = ", ".join(table_cols)
+        insert_values_clause = ", ".join([f"source.{col}" for col in table_cols])
+
+        merge_query = f"""
+        MERGE `{self.project_id}.{self.dataset_id}.{self.table_name}` AS target
+        USING (
+            SELECT *
+            FROM `{self.temp_table_id}`
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY {partition_cols} ORDER BY ingested_at DESC) = 1
+        ) AS source
+        ON {on_clause}
+        WHEN MATCHED THEN
+            UPDATE SET {update_set_clause}
+        WHEN NOT MATCHED THEN
+            INSERT ({insert_cols_clause})
+            VALUES ({insert_values_clause})
+        """
         self.logger.debug(merge_query)
         results = self.bq.execute(query=merge_query)
         self.logger.debug(results)
 
-        self.logger.debug("Truncate staging table...")
-        self.bq.execute(f"truncate table `{self.project_id}.{self.dataset_staging_id}.{self.table_name}`")
-
+        # Temp table is left to auto-expire (expiration set during extract); no explicit DROP.
         return "Success"
