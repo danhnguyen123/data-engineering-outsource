@@ -37,7 +37,7 @@ logger = LoggingHelper.get_configured_logger(__name__)
 # bq = BQHelper(logger=logger)
 
 mapping_etl = {
-    TTC_SURVEY: etl_ttc_survey,
+    # TTC_SURVEY: etl_ttc_survey,
     TTC_EXTERNAL_FACEBOOK: etl_ttc_external_facebook
 }
 
