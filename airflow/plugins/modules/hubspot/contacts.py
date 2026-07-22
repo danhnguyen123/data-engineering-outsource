@@ -118,18 +118,30 @@ class HubspotContactsETL:
             }
         ]
 
+        sortGroups = [
+            {
+                "propertyName": "createdate",
+                "direction": "DESCENDING"
+            }
+        ]
+
         self.logger.debug(f"Get data {self.table_name} from HubSpot")
 
-        results, after = self.hub_spot.search_contacts(properties=properties, filterGroups=filterGroups)
+        results, after = self.hub_spot.search_contacts(properties=properties, filterGroups=filterGroups, sortGroups=sortGroups)
 
         records = list(results)
 
         page_index = 1
         while after:
+
+            if page_index >= config.HUBSPOT_MAX_PAGES:
+                self.logger.debug(f"Reached max page limit {config.HUBSPOT_MAX_PAGES}. Stop extract !")
+                break
+
             page_index += 1
             self.logger.debug(f"Get data {self.table_name} from HubSpot, page {page_index}, after {after}")
 
-            results, after = self.hub_spot.search_contacts(after=after, properties=properties, filterGroups=filterGroups)
+            results, after = self.hub_spot.search_contacts(after=after, properties=properties, filterGroups=filterGroups, sortGroups=sortGroups)
 
             records.extend(results)
 

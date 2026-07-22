@@ -85,6 +85,7 @@ class AppConfig(object):
     PREFIX_HUBSPOT_BUCKET = "hub_spot"
     HUBSPOT_ACCOUNT_ID = 1774127
     HUBSPOT_API_TIMEOUT = 300
+    HUBSPOT_MAX_PAGES = 100
 
     DAHAHI_BASE_URL = os.getenv("DAHAHI_BASE_URL", "https://sapp.dahahi.vn")
     DAHAHI_APP_KEY = os.getenv("DAHAHI_APP_KEY", "unknown")

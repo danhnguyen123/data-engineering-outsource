@@ -84,7 +84,7 @@ class HubspotHelper:
         except Exception as e:
             raise e
         
-    def search_contacts(self, limit=None, after=None, properties: list = None, filterGroups=None):
+    def search_contacts(self, limit=None, after=None, properties: list = None, filterGroups=None, sortGroups=None):
         payload = {
             "limit": str(limit) if limit else config.HUBSPOT_PAGE_SIZE
             }
@@ -94,6 +94,8 @@ class HubspotHelper:
             payload.update({"properties": properties}) 
         if filterGroups:
             payload.update({"filterGroups": filterGroups})    
+        if sortGroups:
+            payload.update({"sorts": sortGroups})
 
         url = f"{config.HUBSPOT_BASE_URL}/crm/v3/objects/contacts/search" 
 
