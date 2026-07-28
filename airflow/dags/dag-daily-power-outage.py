@@ -23,12 +23,18 @@ CUSTOMERS = [
     {"maKH": "PB02050058714", "label": "Nguyễn Văn Dũng - Trại heo"},
 ]
 
+# Units checked every day (ChucNang=MaDonVi). Only alert Discord when `filter_keyword`
+# appears in the outage content (scheduled runs only; manual trigger has no filter).
+DONVI = [
+    {"madvi": "PB0204", "label": "Đơn vị PB0204", "filter_keyword": "Thôn Láng Gón 2"},
+]
+
 DEN_NGAY_DELTA_DAYS = 7  # denNgay = today + 7 days
 NO_OUTAGE_MARKER = "không có lịch ngừng giảm"
 
 # Discord message style: True = bullet-style formatted, False = raw decoded text.
 # Can be overridden per run via conf/param "format_message".
-FORMAT_MESSAGE = True
+FORMAT_MESSAGE = False
 
 local_tz = pendulum.timezone(config.DWH_TIMEZONE)
 logger = LoggingHelper.get_configured_logger(NAMESPACE)
@@ -136,8 +142,11 @@ def _format_outage_message(label, tu_ngay, den_ngay, raw_html):
     return message
 
 
-def check_power_outage(code, label, chuc_nang, **context):
-    """Query the outage schedule for one code; alert Discord if there is an outage, else log."""
+def check_power_outage(code, label, chuc_nang, filter_keyword=None, **context):
+    """Query the outage schedule for one code; alert Discord if there is an outage, else log.
+
+    filter_keyword: if set, only send Discord when the keyword appears in the outage content.
+    """
     tu_ngay = _conf_or_param(context, 'tuNgay') or _default_dates()[0]
     den_ngay = _conf_or_param(context, 'denNgay') or _default_dates()[1]
 
@@ -147,6 +156,13 @@ def check_power_outage(code, label, chuc_nang, **context):
     if not _has_outage(raw_html):
         logger.info(f"[{label}] Không có lịch ngừng giảm cung cấp điện ({tu_ngay} → {den_ngay}). Task chạy OK.")
         return "Success"
+
+    if filter_keyword:
+        content_text = re.sub(r'\s+', ' ', _html_to_text(raw_html).lower())
+        if filter_keyword.lower() not in content_text:
+            logger.info(f"[{label}] Có lịch cúp điện nhưng KHÔNG có '{filter_keyword}' → bỏ qua, không gửi Discord.")
+            return "Success"
+        logger.info(f"[{label}] Có '{filter_keyword}' trong lịch cúp điện → gửi Discord.")
 
     formatted = _conf_or_param(context, 'format_message', FORMAT_MESSAGE)
     if isinstance(formatted, str):
@@ -213,6 +229,21 @@ with DAG(
                     "code": customer["maKH"],
                     "label": customer["label"],
                     "chuc_nang": "MaKhachHang",
+                },
+            )
+        )
+
+    # Daily per-unit checks (ChucNang=MaDonVi), only alert when filter_keyword matches
+    for dv in DONVI:
+        tasks.append(
+            PythonOperator(
+                task_id=f"check_donvi_{dv['madvi']}",
+                python_callable=check_power_outage,
+                op_kwargs={
+                    "code": dv["madvi"],
+                    "label": dv["label"],
+                    "chuc_nang": "MaDonVi",
+                    "filter_keyword": dv["filter_keyword"],
                 },
             )
         )
