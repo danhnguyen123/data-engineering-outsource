@@ -26,6 +26,10 @@ CUSTOMERS = [
 DEN_NGAY_DELTA_DAYS = 7  # denNgay = today + 7 days
 NO_OUTAGE_MARKER = "không có lịch ngừng giảm"
 
+# Discord message style: True = bullet-style formatted, False = raw decoded text.
+# Can be overridden per run via conf/param "format_message".
+FORMAT_MESSAGE = True
+
 local_tz = pendulum.timezone(config.DWH_TIMEZONE)
 logger = LoggingHelper.get_configured_logger(NAMESPACE)
 evn = EVNHelper(logger=logger)
@@ -76,6 +80,62 @@ def _html_to_text(raw_html: str) -> str:
     return '\n'.join(ln for ln in lines if ln)
 
 
+def _clean_html(fragment: str) -> str:
+    fragment = re.sub(r'<[^>]+>', ' ', fragment)
+    fragment = html_lib.unescape(fragment)
+    return re.sub(r'\s+', ' ', fragment).strip()
+
+
+def _parse_outage(raw_html: str):
+    """Extract {unit, entries:[{where, time, cause}]} from the outage HTML fragment."""
+    unit_m = re.search(r'Đơn vị:\s*</b>(.*?)</span>', raw_html, re.I | re.S)
+    unit = _clean_html(unit_m.group(1)) if unit_m else None
+
+    entries = []
+    for chunk in re.split(r'<div\s+class="entry"', raw_html, flags=re.I)[1:]:
+        where_m = re.search(r'KHU VỰC:\s*</b>(.*?)</span>', chunk, re.I | re.S)
+        time_m = re.search(r'THỜI GIAN:\s*</b>(.*?)</span>', chunk, re.I | re.S)
+        cause_m = re.search(r'ĐIỆN:\s*</b>(.*?)</span>', chunk, re.I | re.S)
+        entry = {
+            "where": _clean_html(where_m.group(1)) if where_m else None,
+            "time": _clean_html(time_m.group(1)) if time_m else None,
+            "cause": _clean_html(cause_m.group(1)) if cause_m else None,
+        }
+        if any(entry.values()):
+            entries.append(entry)
+    return unit, entries
+
+
+def _format_outage_message(label, tu_ngay, den_ngay, raw_html):
+    """Build a readable, bullet-style Discord message from the outage HTML."""
+    unit, entries = _parse_outage(raw_html)
+
+    lines = [
+        f"⚡ **CẢNH BÁO CÚP ĐIỆN** — {label}",
+        f"🗓️ Khoảng tra cứu: {tu_ngay} → {den_ngay}",
+    ]
+    if unit:
+        lines.append(f"🏢 Đơn vị: {unit}")
+
+    if entries:
+        for i, e in enumerate(entries, 1):
+            lines.append("")
+            lines.append(f"**{i}. 📍 {e['where'] or 'N/A'}**")
+            if e["time"]:
+                lines.append(f"🕐 {e['time']}")
+            if e["cause"]:
+                lines.append(f"⚠️ Lý do: {e['cause']}")
+    else:
+        # Structure not recognized -> fall back to plain readable text
+        lines.append("")
+        lines.append(_html_to_text(raw_html))
+
+    message = "\n".join(lines).strip()
+    if len(message) > 1900:
+        message = message[:1900] + "\n… (đã cắt bớt)"
+    return message
+
+
 def check_power_outage(code, label, chuc_nang, **context):
     """Query the outage schedule for one code; alert Discord if there is an outage, else log."""
     tu_ngay = _conf_or_param(context, 'tuNgay') or _default_dates()[0]
@@ -88,10 +148,17 @@ def check_power_outage(code, label, chuc_nang, **context):
         logger.info(f"[{label}] Không có lịch ngừng giảm cung cấp điện ({tu_ngay} → {den_ngay}). Task chạy OK.")
         return "Success"
 
-    body = _html_to_text(raw_html)
-    message = f"⚡ [CẢNH BÁO CÚP ĐIỆN] {label} ({tu_ngay} → {den_ngay})\n{body}"
-    if len(message) > 1900:
-        message = message[:1900] + "\n... (đã cắt bớt)"
+    formatted = _conf_or_param(context, 'format_message', FORMAT_MESSAGE)
+    if isinstance(formatted, str):
+        formatted = formatted.strip().lower() in ('1', 'true', 'yes', 'y')
+
+    if formatted:
+        message = _format_outage_message(label, tu_ngay, den_ngay, raw_html)
+    else:
+        body = _html_to_text(raw_html)
+        message = f"⚡ [CẢNH BÁO CÚP ĐIỆN] {label} ({tu_ngay} → {den_ngay})\n{body}"
+        if len(message) > 1900:
+            message = message[:1900] + "\n… (đã cắt bớt)"
 
     send_discord_message(config.DISCORD_WEBHOOK, message)
     logger.info(f"[{label}] Có lịch cúp điện → đã gửi Discord.")
@@ -115,6 +182,7 @@ def contruct_params():
         "ma": None,                 # manual trigger: mã maKH hoặc madvi cần tra cứu
         "tuNgay": None,             # optional override, format "DD-MM-YYYY"
         "denNgay": None,            # optional override, format "DD-MM-YYYY"
+        "format_message": FORMAT_MESSAGE,  # True = bullet-style, False = raw text
     }
 
 
