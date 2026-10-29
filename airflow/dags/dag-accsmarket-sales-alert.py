@@ -74,32 +74,31 @@ def check_fast_selling(catalog, **context):
 
     in_stock = sum(1 for i in items if i.get("qty"))
     if not baseline:
-        logger.info(f"[{catalog['key']}] First run: saved baseline for {len(new_baseline)} items ({in_stock} in stock). No alert.")
-        return "Success"
+        logger.info(f"[{catalog['key']}] First run: saved baseline for {len(new_baseline)} items ({in_stock} in stock).")
 
     if not alerts:
-        logger.info(f"[{catalog['key']}] {len(items)} items ({in_stock} in stock): no good item sold >= {MIN_SOLD} "
-                    f"within {SALES_WINDOW_MINUTES} min. Task chạy OK.")
+        logger.info(f"[{catalog['key']}] {len(items)} items ({in_stock} in stock): no new/restocked good item "
+                    f"and none sold >= {MIN_SOLD} within {SALES_WINDOW_MINUTES} min. Task chạy OK.")
         return "Success"
 
     for message in build_alert_messages(alerts, catalog["key"]):
         send_discord_message(config.DISCORD_WEBHOOK, message)
-    logger.info(f"[{catalog['key']}] Sent Discord alert for {len(alerts)} fast-selling items: "
-                f"{[(a['id'], a['sold']) for a in alerts]}")
+    logger.info(f"[{catalog['key']}] Sent Discord alert for {len(alerts)} good items: "
+                f"{[(a['kind'], a['id'], a.get('sold')) for a in alerts]}")
     return "Success"
 
 
 with DAG(
     'dag-accsmarket-sales-alert',
     default_args=default_args,
-    description='Alert Discord when good AccsMarket items are selling fast',
+    description='Alert Discord about good AccsMarket items: newly found, back in stock or selling fast',
     schedule_interval='*/15 * * * *' if config.ENV == "prod" else None,
     start_date=datetime(2024, 1, 1, 0, tzinfo=local_tz),
     catchup=False,
     max_active_runs=1,  # runs share the Redis baseline, never overlap them
     dagrun_timeout=timedelta(minutes=10),
     tags=['15mins', 'accsmarket', 'alert', 'discord'],
-    dag_display_name="AccsMarket - alert hàng tốt bán nhanh (15 phút)"
+    dag_display_name="AccsMarket - alert hàng tốt (15 phút)"
 ) as dag:
 
     start = EmptyOperator(task_id='start')
