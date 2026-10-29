@@ -32,26 +32,35 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # full history, so the pushed commit range can be diffed
 
       - name: Check for changes in Cloud Function source
         id: check_changes
+        env:
+          BEFORE: ${{ github.event.before }}
         run: |
-          echo "Checking for changes in functions/myspa-etl/"
-          if git diff --quiet HEAD^ HEAD -- functions/myspa-etl; then
+          echo "Checking for changes in functions/myspa-etl/ between ${BEFORE} and ${GITHUB_SHA}"
+          if [ -z "$BEFORE" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "Previous commit not available (new branch or force push) -> deploy."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$BEFORE" "$GITHUB_SHA" -- functions/myspa-etl; then
             echo "No changes detected in Cloud Function source."
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "Changes detected."
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Authenticate to Google Cloud
+        if: steps.check_changes.outputs.changed == 'true'
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_WORKLOAD_SERVICE_ACCOUNT }}
 
       - name: Setup gcloud
+        if: steps.check_changes.outputs.changed == 'true'
         uses: google-github-actions/setup-gcloud@v2
         with:
             project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -73,4 +82,4 @@ jobs:
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --service-account ${{ secrets.GCP_SERVICE_ACCOUNT }} \
             --allow-unauthenticated \
-            --set-env-vars "DISCORD_WEBHOOK=${{ secrets.DISCORD_WEBHOOK }}" \
+            --set-env-vars "DISCORD_WEBHOOK=${{ secrets.DISCORD_WEBHOOK }}"
