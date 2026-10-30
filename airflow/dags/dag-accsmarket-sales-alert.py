@@ -81,7 +81,9 @@ def check_fast_selling(catalog, **context):
                     f"and none sold >= {MIN_SOLD} within {SALES_WINDOW_MINUTES} min. Task chạy OK.")
         return "Success"
 
-    for message in build_alert_messages(alerts, catalog["key"]):
+    for n, message in enumerate(build_alert_messages(alerts, catalog["key"])):
+        if n:
+            time.sleep(1)  # stay under Discord's webhook rate limit (~5 messages / 2s)
         send_discord_message(config.DISCORD_WEBHOOK, message)
     logger.info(f"[{catalog['key']}] Sent Discord alert for {len(alerts)} good items: "
                 f"{[(a['kind'], a['id'], a.get('sold')) for a in alerts]}")

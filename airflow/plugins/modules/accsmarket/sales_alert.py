@@ -86,8 +86,6 @@ def build_alert_messages(alerts: List[Dict], catalog_key: str, max_len: int = 19
     blocks, current_kind = [], None
     for i, a in enumerate(alerts, 1):
         title = a.get("title") or ""
-        if len(title) > 140:
-            title = title[:140] + "…"
 
         if a["kind"] == FAST:
             stock_line = f"📉 Đã bán **{a['sold']}** ({a['prev_qty']} → {a['qty']}) trong {a['minutes']} phút"
